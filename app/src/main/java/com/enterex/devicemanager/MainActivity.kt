@@ -925,24 +925,37 @@ class MainActivity : Activity() {
         add(root, label("Seus arquivos organizados em um só lugar.", 13f, muted), bottom = 18)
 
         fun storageTile(icon: String, title: String, detail: String, action: () -> Unit, locked: Boolean = false) {
-            val tile = card()
-            val row = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
+            val tile = card().apply {
+                background = shape(Color.rgb(10, 12, 15), Color.rgb(75, 83, 96), 18)
+                isClickable = true
+                isFocusable = true
+                elevation = dp(2).toFloat()
             }
-            add(row, label(icon, 28f, silver, true))
+            val iconView = label(icon, 28f, silver, true).apply {
+                background = shape(Color.rgb(25, 29, 35), Color.rgb(90, 100, 115), 14)
+                setPadding(dp(8), dp(6), dp(8), dp(6))
+            }
             val copy = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(dp(14), 0, 0, 0)
             }
-            add(copy, label(title + if (locked) "  🔒" else "", 15f, silver, true))
-            add(copy, label(detail, 11f, muted))
+            add(copy, label(title + if (locked) "  🔒" else "", 15f, silver, true), bottom = 4)
+            add(copy, label(detail, 11f, muted).apply { gravity = Gravity.START })
+            val plus = makeButton("+", true).apply {
+                setOnClickListener { animateCloudTile(tile, iconView, action) }
+            }
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+            }
+            row.addView(iconView, LinearLayout.LayoutParams(dp(52), dp(52)))
             row.addView(copy, LinearLayout.LayoutParams(0, -2, 1f))
-            row.addView(makeButton("+", true).apply { setOnClickListener { action() } },
-                LinearLayout.LayoutParams(dp(48), dp(44)))
+            row.addView(plus, LinearLayout.LayoutParams(dp(48), dp(44)))
             add(tile, row)
+            tile.setOnClickListener { animateCloudTile(tile, iconView, action) }
             add(root, tile, bottom = 12)
         }
+
 
         storageTile("▧", "Imagens", "Free: até 500 MB • Pro: ilimitado", { pickCloudFile("image/*", "Imagens") })
         storageTile("▶", "Vídeos", "Free: até 500 MB • Pro: ilimitado", { pickCloudFile("video/*", "Vídeos") })
@@ -954,6 +967,29 @@ class MainActivity : Activity() {
         add(root, label("Aviso: envio e armazenamento em nuvem ainda dependem do serviço online e não estão ativos nesta versão.", 11f, muted), bottom = 16)
         addBottomNavigation(root, "Nuvem")
         setContentView(scroll)
+    }
+
+    private fun animateCloudTile(tile: View, iconView: View, action: () -> Unit) {
+        tile.animate().cancel()
+        iconView.animate().cancel()
+        tile.animate()
+            .scaleX(0.97f).scaleY(0.97f)
+            .translationZ(dp(6).toFloat())
+            .setDuration(90L)
+            .withEndAction {
+                tile.animate()
+                    .scaleX(1f).scaleY(1f)
+                    .translationZ(0f)
+                    .setDuration(160L)
+                    .start()
+                iconView.animate()
+                    .scaleX(1.12f).scaleY(1.12f)
+                    .setDuration(100L)
+                    .withEndAction {
+                        iconView.animate().scaleX(1f).scaleY(1f).setDuration(140L).start()
+                        action.invoke()
+                    }.start()
+            }.start()
     }
 
     private fun pickCloudFile(mimeType: String, category: String) {
