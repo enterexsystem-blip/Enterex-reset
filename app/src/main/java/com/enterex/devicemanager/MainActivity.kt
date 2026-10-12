@@ -434,21 +434,20 @@ class MainActivity : Activity() {
         }
     }
 
-    private val screenHistory = java.util.ArrayDeque<() -> Unit>()
-    private var handlingBack = false
+    private var currentScreen = "splash"
 
-    private fun navigateTo(screen: () -> Unit) {
-        if (!handlingBack) screenHistory.addLast(screen)
-        screen()
-    }
+    private fun markScreen(name: String) { currentScreen = name }
 
     @Suppress("DEPRECATION")
     override fun onBackPressed() {
-        if (screenHistory.isNotEmpty()) {
-            handlingBack = true
-            try { screenHistory.removeLast().invoke() } finally { handlingBack = false }
-        } else {
-            super.onBackPressed()
+        when (currentScreen) {
+            "splash", "login", "registration" -> showLogin()
+            "dashboard" -> AlertDialog.Builder(this)
+                .setTitle("Enterex")
+                .setMessage("Você está na tela inicial.")
+                .setPositiveButton("OK", null)
+                .show()
+            else -> showDashboard()
         }
     }
 
@@ -462,6 +461,7 @@ class MainActivity : Activity() {
     }
 
     private fun showSplash() {
+        markScreen("splash")
         val (scroll, root) = createRoot()
         root.gravity = Gravity.CENTER
         val title = label("ENTEREX", 34f, silver, true).apply {
@@ -508,6 +508,7 @@ class MainActivity : Activity() {
     }
 
     private fun showLogin() {
+        markScreen("login")
         val (scroll, root) = createRoot()
         addHeader(root)
         addBrand(root)
@@ -615,6 +616,7 @@ class MainActivity : Activity() {
     }
 
     private fun showRegistration() {
+        markScreen("registration")
         val (scroll, root) = createRoot()
         profileImage = null
         selectedPhoto = null
@@ -773,6 +775,7 @@ class MainActivity : Activity() {
     // PAINEL PRINCIPAL
 
     private fun showDashboard() {
+        markScreen("dashboard")
         val (scroll, root) = createRoot()
         root.setPadding(dp(18), dp(18), dp(18), dp(14))
 
@@ -930,6 +933,7 @@ class MainActivity : Activity() {
 
 
     private fun showNotifications() {
+        markScreen("notifications")
         val (scroll, root) = createRoot()
         addHeader(root)
         add(root, label("NOTIFICAÇÕES", 20f, silver, true), bottom = 8)
@@ -944,6 +948,7 @@ class MainActivity : Activity() {
     }
 
     private fun showCloudStorage() {
+        markScreen("cloud")
         val (scroll, root) = createRoot()
         addHeader(root)
         add(root, label("NUVEM ENTEREX", 21f, silver, true), bottom = 6)
@@ -1023,6 +1028,7 @@ class MainActivity : Activity() {
     }
 
     private fun showNotes() {
+        markScreen("notes")
         val input = EditText(this).apply {
             hint = "Escreva uma anotação"
             setTextColor(silver)
@@ -1104,6 +1110,7 @@ class MainActivity : Activity() {
     }
 
     private fun showPlans() {
+        markScreen("plans")
         val panel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(20), dp(18), dp(20), dp(16))
@@ -1136,6 +1143,7 @@ class MainActivity : Activity() {
     }
 
     private fun showDevices() {
+        markScreen("devices")
         val (scroll, root) = createRoot()
         addHeader(root)
         add(root, label("DISPOSITIVOS", 22f, silver, true), bottom = 8)
@@ -1158,6 +1166,7 @@ class MainActivity : Activity() {
     }
 
     private fun showTools() {
+        markScreen("tools")
         val (scroll, root) = createRoot()
         addHeader(root)
         add(root, label("FERRAMENTAS", 22f, silver, true), bottom = 8)
@@ -1219,6 +1228,7 @@ class MainActivity : Activity() {
     }
 
     private fun showSettings() {
+        markScreen("settings")
         val (scroll, root) = createRoot()
         root.setPadding(dp(18), dp(18), dp(18), dp(18))
         addHeader(root)
@@ -1290,6 +1300,7 @@ class MainActivity : Activity() {
     }
 
     private fun showProfile() {
+        markScreen("profile")
         val (scroll, root) = createRoot()
         addHeader(root)
         add(root, label("MEU PERFIL", 22f, silver, true), bottom = 18)
