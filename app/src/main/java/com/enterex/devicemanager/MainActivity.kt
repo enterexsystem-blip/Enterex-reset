@@ -172,7 +172,7 @@ class MainActivity : Activity() {
             isSingleLine = true
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(14), dp(4), dp(14), dp(4))
-            background = shape(black, Color.WHITE, 10)
+            background = shape(panel, line, 10)
             minHeight = dp(52)
         }
 
@@ -182,12 +182,12 @@ class MainActivity : Activity() {
             textSize = 13f
             isAllCaps = false
             letterSpacing = 0.03f
-            setTextColor(if (filled) black else Color.WHITE)
+            setTextColor(if (filled) black else silver)
             typeface = Typeface.DEFAULT_BOLD
             background = if (filled) {
-                shape(silver, Color.WHITE, 10)
+                shape(accent, line, 10)
             } else {
-                shape(black, Color.WHITE, 10)
+                shape(panel, line, 10)
             }
             minHeight = dp(48)
             setPadding(dp(12), 0, dp(12), 0)
@@ -205,7 +205,7 @@ class MainActivity : Activity() {
             text = "Mostrar senha"
             textSize = 12f
             setTextColor(silver)
-            buttonTintList = android.content.res.ColorStateList.valueOf(Color.WHITE)
+            buttonTintList = android.content.res.ColorStateList.valueOf(accent)
             setOnCheckedChangeListener { _, checked ->
                 val cursor = field.selectionStart
                 field.transformationMethod = if (checked) {
@@ -1043,7 +1043,7 @@ class MainActivity : Activity() {
         val nav = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
-            background = shape(Color.rgb(16, 18, 22), Color.rgb(65, 73, 84), 22)
+            background = shape(panel, line, 22)
             setPadding(dp(5), dp(6), dp(5), dp(6))
             elevation = dp(8).toFloat()
         }
@@ -1058,7 +1058,7 @@ class MainActivity : Activity() {
             val slot = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.CENTER
-                background = if (active) shape(Color.rgb(43, 48, 57), Color.rgb(125, 137, 154), 16)
+                background = if (active) shape(accent, line, 16)
                     else shape(Color.TRANSPARENT, Color.TRANSPARENT, 16)
                 setPadding(dp(3), dp(5), dp(3), dp(4))
                 isClickable = true
@@ -1076,7 +1076,7 @@ class MainActivity : Activity() {
                 text = item.first
                 textSize = if (active) 25f else 22f
                 gravity = Gravity.CENTER
-                setTextColor(if (active) Color.WHITE else Color.rgb(132, 141, 154))
+                setTextColor(if (active) black else muted)
                 scaleX = if (active) 1.08f else 1f
                 scaleY = if (active) 1.08f else 1f
             }
