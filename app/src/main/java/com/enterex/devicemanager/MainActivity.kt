@@ -181,9 +181,13 @@ class MainActivity : Activity() {
             textSize = 13f
             isAllCaps = false
             letterSpacing = 0.03f
-            setTextColor(Color.WHITE)
+            setTextColor(if (filled) black else Color.WHITE)
             typeface = Typeface.DEFAULT_BOLD
-            background = shape(black, Color.WHITE, 10)
+            background = if (filled) {
+                shape(silver, Color.WHITE, 10)
+            } else {
+                shape(black, Color.WHITE, 10)
+            }
             minHeight = dp(48)
             setPadding(dp(12), 0, dp(12), 0)
         }
@@ -225,69 +229,119 @@ class MainActivity : Activity() {
     }
 
     private fun showAuthorizationNotice(accountKey: String) {
+        val black = Color.rgb(5, 6, 8)
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(18), dp(20), dp(16))
+            setBackgroundColor(black)
+        }
+
+        val heading = TextView(this).apply {
+            text = "ENTEREX  /  TERMO DE AUTORIZAÇÃO"
+            textSize = 17f
+            setTextColor(silver)
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, dp(8))
+        }
+        panel.addView(heading)
+
+        val subtitle = TextView(this).apply {
+            text = "Leia até o final e escolha uma opção para continuar."
+            textSize = 12f
+            setTextColor(muted)
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, dp(14))
+        }
+        panel.addView(subtitle)
+
         val message = """
             TERMO DE CIÊNCIA, AUTORIZAÇÃO E RESPONSABILIDADE — ENTEREX
 
-            1. DISPOSIÇÕES GERAIS. O acesso ao painel do aplicativo Enterex está condicionado à leitura e à manifestação expressa de concordância com este termo.
+            1. DISPOSIÇÕES GERAIS
+            O acesso ao painel do aplicativo Enterex depende da leitura e da manifestação expressa de concordância com este termo.
 
-            2. REGISTRO DA ESCOLHA. A opção selecionada será armazenada localmente neste dispositivo, associada à conta utilizada, para evitar a exibição repetida deste aviso enquanto o respectivo registro permanecer disponível no aplicativo.
+            2. REGISTRO DA ESCOLHA
+            A opção selecionada será armazenada localmente neste dispositivo, associada à conta utilizada, para evitar a exibição repetida deste aviso enquanto o registro permanecer disponível.
 
-            3. LIMITES DA AUTORIZAÇÃO. A concordância limita-se ao registro de ciência deste termo e à liberação de acesso ao painel. Não constitui, por si só, concessão de permissões do sistema Android, autorização de depuração USB, acesso à conta Google, vínculo com serviços de terceiros ou autorização técnica para controlar, restaurar ou apagar qualquer dispositivo.
+            3. LIMITES DA AUTORIZAÇÃO
+            A concordância registra ciência deste termo e libera o acesso ao painel. Não concede, por si só, permissões do Android, autorização de depuração USB, acesso à conta Google, vínculo com serviços de terceiros nem autorização técnica para controlar, restaurar ou apagar dispositivos.
 
-            4. PERMISSÕES E COMPATIBILIDADE. Cada recurso dependerá de implementação efetiva, compatibilidade técnica, permissões específicas exigidas pelo sistema operacional e, quando aplicável, dos procedimentos oficiais do fabricante ou prestador do serviço. Este termo não substitui essas etapas.
+            4. PERMISSÕES E COMPATIBILIDADE
+            Cada recurso depende de implementação efetiva, compatibilidade técnica, permissões específicas do sistema e, quando aplicável, dos procedimentos oficiais do fabricante. Este termo não substitui essas etapas.
 
-            5. RISCO DE PERDA DE DADOS. Procedimentos de restauração ou apagamento, quando futuramente disponíveis e devidamente autorizados, poderão eliminar dados de forma permanente. Tais procedimentos deverão ser realizados exclusivamente em dispositivos de propriedade do usuário ou mediante autorização legítima do respectivo proprietário.
+            5. RISCO DE PERDA DE DADOS
+            Procedimentos de restauração ou apagamento, quando disponíveis e devidamente autorizados, podem eliminar dados permanentemente. Devem ser realizados somente em dispositivos próprios ou com autorização legítima do proprietário.
 
-            6. MANIFESTAÇÃO DE VONTADE. A seleção de “Aceitar” indica ciência e concordância com as condições acima. A seleção de “Recusar” impede o acesso ao painel neste momento. A escolha poderá ser alterada apenas mediante os meios disponibilizados pelo aplicativo.
+            6. MANIFESTAÇÃO DE VONTADE
+            Ao aceitar, você confirma que leu e compreendeu as condições acima. Ao recusar, o acesso ao painel será bloqueado e você retornará à tela de acesso.
 
-            Ao prosseguir, confirme uma das opções abaixo.
+            Role esta mensagem até o final antes de escolher.
         """.trimIndent()
 
-        val options = arrayOf(
-            "ACEITO os termos acima e desejo continuar para o painel.",
-            "RECUSO os termos e desejo retornar à tela de acesso."
-        )
-        var selectedOption = -1
+        val body = TextView(this).apply {
+            text = message
+            textSize = 13f
+            setTextColor(silver)
+            setLineSpacing(dp(4).toFloat(), 1.05f)
+            setPadding(dp(14), dp(14), dp(14), dp(14))
+            background = shape(Color.rgb(13, 15, 19), line, 12)
+        }
+        val termsScroll = ScrollView(this).apply {
+            isFillViewport = false
+            overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
+            addView(body, android.widget.FrameLayout.LayoutParams(
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+                android.widget.FrameLayout.LayoutParams.WRAP_CONTENT
+            ))
+        }
+        panel.addView(termsScroll, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, dp(330)
+        ))
+
+        val accept = makeButton("ACEITAR E CONTINUAR", true)
+        val decline = makeButton("RECUSAR E SAIR", false)
+        val buttons = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, dp(14), 0, 0)
+        }
+        buttons.addView(accept, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, dp(48)
+        ))
+        buttons.addView(decline, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, dp(46)
+        ).apply { topMargin = dp(8) })
+        panel.addView(buttons)
 
         val dialog = AlertDialog.Builder(this)
-            .setTitle("TERMO DE CIÊNCIA E AUTORIZAÇÃO")
-            .setMessage(message)
-            .setSingleChoiceItems(options, -1) { _, which ->
-                selectedOption = which
-            }
-            .setPositiveButton("CONFIRMAR ESCOLHA", null)
+            .setView(panel)
             .setCancelable(false)
             .create()
 
+        accept.setOnClickListener {
+            authorizations.edit().putBoolean("consent_$accountKey", true).apply()
+            dialog.dismiss()
+            showCreatorIntro()
+        }
+        decline.setOnClickListener {
+            currentAccount = JSONObject()
+            dialog.dismiss()
+            Toast.makeText(
+                this,
+                "Você recusou o termo. O painel continuará bloqueado.",
+                Toast.LENGTH_LONG
+            ).show()
+            showLogin()
+        }
         dialog.setOnShowListener {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                when (selectedOption) {
-                    0 -> {
-                        authorizations.edit()
-                            .putBoolean("consent_$accountKey", true)
-                            .apply()
-                        dialog.dismiss()
-                        showCreatorIntro()
-                    }
-                    1 -> {
-                        currentAccount = JSONObject()
-                        dialog.dismiss()
-                        Toast.makeText(
-                            this,
-                            "A opção foi recusada. O painel permanecerá bloqueado.",
-                            Toast.LENGTH_LONG
-                        ).show()
-                        showLogin()
-                    }
-                    else -> Toast.makeText(
-                        this,
-                        "Marque uma das opções antes de confirmar.",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
+            dialog.window?.setBackgroundDrawableResource(android.R.color.black)
         }
         dialog.show()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.black)
+        dialog.window?.setLayout(
+            (resources.displayMetrics.widthPixels * 0.94f).toInt(),
+            android.view.WindowManager.LayoutParams.WRAP_CONTENT
+        )
     }
 
     private fun showCreatorIntro() {
@@ -535,24 +589,8 @@ class MainActivity : Activity() {
         add(form, nickname, bottom = 14)
 
         add(form, label("IDADE", 10f, muted, true), bottom = 7)
-        val age = inputField("Sua idade", InputType.TYPE_CLASS_NUMBER)
+        val age = inputField("Idade em anos", InputType.TYPE_CLASS_NUMBER)
         add(form, age, bottom = 14)
-
-        add(form, label("BIOGRAFIA (OPCIONAL)", 10f, muted, true), bottom = 7)
-        val bio = EditText(this).apply {
-            hint = "Conte um pouco sobre você..."
-            textSize = 14f
-            setTextColor(silver)
-            setHintTextColor(muted)
-            inputType = InputType.TYPE_CLASS_TEXT or
-                InputType.TYPE_TEXT_FLAG_CAP_SENTENCES or
-                InputType.TYPE_TEXT_FLAG_MULTI_LINE
-            gravity = Gravity.TOP or Gravity.START
-            minHeight = dp(90)
-            setPadding(dp(14), dp(12), dp(14), dp(12))
-            background = shape(black, line, 10)
-        }
-        add(form, bio, bottom = 14)
 
         add(form, label("E-MAIL", 10f, muted, true), bottom = 7)
         val email = inputField(
@@ -589,7 +627,6 @@ class MainActivity : Activity() {
         register.setOnClickListener {
             val name = nickname.text.toString().trim()
             val ageText = age.text.toString().trim()
-            val bioText = bio.text.toString().trim()
             val emailText = email.text.toString().trim()
             val pass = password.text.toString()
             val confirmText = confirm.text.toString()
@@ -619,7 +656,7 @@ class MainActivity : Activity() {
                 }
                 else -> {
                     val saved = createAccount(
-                        name, parsedAge!!, bioText, emailText, pass
+                        name, parsedAge!!, "", emailText, pass
                     )
                     if (saved) {
                         Toast.makeText(
@@ -702,6 +739,15 @@ class MainActivity : Activity() {
             12f, muted
         ).apply { gravity = Gravity.START })
         add(root, status, bottom = 22)
+
+        val plansCard = card()
+        add(plansCard, label("PLANOS DE ACESSO", 12f, silver, true), bottom = 8)
+        add(plansCard, label("7 dias — R$ 15,00  •  15 dias — R$ 30,00  •  1 mês — R$ 50,00", 13f, Color.WHITE, true), bottom = 8)
+        add(plansCard, label("Pagamento online ainda não integrado. Nenhuma cobrança ou ativação será feita aqui.", 11f, muted), bottom = 10)
+        val plansButton = makeButton("VER PLANOS", false)
+        add(plansCard, plansButton)
+        plansButton.setOnClickListener { showPlans() }
+        add(root, plansCard, bottom = 20)
 
         add(root, label("ACESSO RÁPIDO", 12f, muted, true), bottom = 12)
 
@@ -793,6 +839,39 @@ class MainActivity : Activity() {
         setContentView(scroll)
     }
 
+
+    private fun showPlans() {
+        val (scroll, root) = createRoot()
+        addHeader(root)
+        add(root, label("PLANOS ENTEREX", 22f, silver, true), bottom = 8)
+        add(root, label("Escolha o período desejado.", 12f, muted), bottom = 18)
+        listOf(
+            Triple("7 DIAS", "R$ 15,00", "Acesso por 7 dias após confirmação"),
+            Triple("15 DIAS", "R$ 30,00", "Acesso por 15 dias após confirmação"),
+            Triple("1 MÊS", "R$ 50,00", "Acesso por 1 mês após confirmação")
+        ).forEach { plan ->
+            val item = card()
+            add(item, label(plan.first, 12f, muted, true), bottom = 5)
+            add(item, label(plan.second, 24f, Color.WHITE, true), bottom = 5)
+            add(item, label(plan.third, 11f, muted), bottom = 10)
+            val buy = makeButton("INDISPONÍVEL NO MOMENTO", false)
+            add(item, buy)
+            buy.setOnClickListener {
+                AlertDialog.Builder(this)
+                    .setTitle("Compra indisponível")
+                    .setMessage("O pagamento online ainda não foi integrado. Nenhuma cobrança foi realizada e nenhum plano foi ativado. Entre em contato com o suporte.")
+                    .setPositiveButton("ENTENDI", null)
+                    .show()
+            }
+            add(root, item, bottom = 12)
+        }
+        add(root, label("A ativação depende da integração segura de pagamentos e servidor.", 11f, muted), bottom = 18)
+        val back = makeButton("VOLTAR AO PAINEL", true)
+        add(root, back)
+        back.setOnClickListener { showDashboard() }
+        setContentView(scroll)
+    }
+
     private fun showDevices() {
         val (scroll, root) = createRoot()
         addHeader(root)
@@ -824,9 +903,7 @@ class MainActivity : Activity() {
         val diagnostic = card()
         add(diagnostic, label("DIAGNÓSTICO DO APARELHO", 13f, silver, true), bottom = 10)
         add(diagnostic, label(
-            "As ferramentas serão habilitadas quando um dispositivo compatível " +
-                "for detectado. A restauração deve ser executada somente em aparelhos " +
-                "seus ou com autorização do proprietário.",
+            "Área de consulta. A restauração ficará restrita ao ADM autorizado e só será habilitada quando houver integração técnica e validação segura.",
             12f, muted
         ))
         add(root, diagnostic, bottom = 18)
