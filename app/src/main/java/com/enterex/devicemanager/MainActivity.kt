@@ -831,9 +831,71 @@ class MainActivity : Activity() {
         ))
         add(root, diagnostic, bottom = 18)
 
+        val diagnose = makeButton("VER DIAGNÓSTICO BÁSICO", true)
+        add(root, diagnose, bottom = 10)
+        diagnose.setOnClickListener { showDiagnostic() }
+
         val back = makeButton("VOLTAR AO PAINEL", true)
         add(root, back)
         back.setOnClickListener { showDashboard() }
+        setContentView(scroll)
+    }
+
+    private fun showDiagnostic() {
+        val (scroll, root) = createRoot()
+        addHeader(root)
+        add(root, label("DIAGNÓSTICO BÁSICO", 21f, silver, true), bottom = 6)
+        add(root, label("Informações que o Android permite consultar nesta versão.", 12f, muted), bottom = 18)
+
+        val batteryIntent = registerReceiver(null, android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val level = batteryIntent?.getIntExtra("level", -1) ?: -1
+        val scale = batteryIntent?.getIntExtra("scale", -1) ?: -1
+        val batteryPct = if (level >= 0 && scale > 0) (level * 100 / scale).toString() + "%" else "Indisponível"
+        val charging = when (batteryIntent?.getIntExtra("status", -1)) {
+            android.os.BatteryManager.BATTERY_STATUS_CHARGING,
+            android.os.BatteryManager.BATTERY_STATUS_FULL -> "Carregando / carga completa"
+            android.os.BatteryManager.BATTERY_STATUS_DISCHARGING,
+            android.os.BatteryManager.BATTERY_STATUS_NOT_CHARGING -> "Não está carregando"
+            else -> "Indisponível"
+        }
+        val manager = getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        val network = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            val active = manager.activeNetwork
+            val caps = if (active != null) manager.getNetworkCapabilities(active) else null
+            when {
+                caps == null -> "Sem conexão ativa"
+                caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) -> "Wi-Fi conectado"
+                caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR) -> "Dados móveis conectados"
+                caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_ETHERNET) -> "Ethernet conectada"
+                else -> "Conectado por outra rede"
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            if (manager.activeNetworkInfo?.isConnected == true) "Conexão ativa" else "Sem conexão ativa"
+        }
+        val locationMode = try {
+            if (android.provider.Settings.Secure.getInt(contentResolver, android.provider.Settings.Secure.LOCATION_MODE) != android.provider.Settings.Secure.LOCATION_MODE_OFF) "Ativada" else "Desativada"
+        } catch (_: Exception) { "Não foi possível consultar" }
+
+        val info = card()
+        add(info, label("🟢  IDENTIFICAÇÃO", 12f, Color.rgb(76, 220, 135), true), bottom = 12)
+        add(info, label("Fabricante: ${android.os.Build.MANUFACTURER}", 13f, silver).apply { gravity = Gravity.START }, bottom = 7)
+        add(info, label("Modelo: ${android.os.Build.MODEL}", 13f, silver).apply { gravity = Gravity.START }, bottom = 7)
+        add(info, label("Android: ${android.os.Build.VERSION.RELEASE} (API ${android.os.Build.VERSION.SDK_INT})", 13f, silver).apply { gravity = Gravity.START }, bottom = 7)
+        add(info, label("Bateria: $batteryPct", 13f, silver).apply { gravity = Gravity.START }, bottom = 7)
+        add(info, label("Energia: $charging", 13f, silver).apply { gravity = Gravity.START }, bottom = 7)
+        add(info, label("Rede: $network", 13f, silver).apply { gravity = Gravity.START }, bottom = 7)
+        add(info, label("Localização do aparelho: $locationMode", 13f, silver).apply { gravity = Gravity.START }, bottom = 12)
+        add(info, label("🟡  Wi-Fi: o nome da rede, análise de APKs e verificação de vírus não são consultados nesta etapa.", 11f, Color.rgb(255, 205, 70)).apply { gravity = Gravity.START })
+        add(root, info, bottom = 16)
+        add(root, label("Este é um diagnóstico básico, não um exame completo de segurança ou desempenho.", 11f, muted), bottom = 18)
+
+        val refresh = makeButton("ATUALIZAR DIAGNÓSTICO", true)
+        add(root, refresh, bottom = 10)
+        refresh.setOnClickListener { showDiagnostic() }
+        val back = makeButton("VOLTAR ÀS FERRAMENTAS", false)
+        add(root, back)
+        back.setOnClickListener { showTools() }
         setContentView(scroll)
     }
 
