@@ -120,7 +120,7 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER_VERTICAL
         }
 
-        val brand = label("◈ ENTEREX", 17f, silver, true).apply {
+        val brand = label("🐉  ENTEREX", 17f, silver, true).apply {
             gravity = Gravity.CENTER_VERTICAL
             letterSpacing = 0.08f
         }
@@ -134,7 +134,7 @@ class MainActivity : Activity() {
     }
 
     private fun addBrand(root: LinearLayout) {
-        add(root, label("◈", 60f, silver), bottom = 0)
+        add(root, label("🐉", 52f, silver), bottom = 2)
         add(root, label("ENTEREX", 30f, silver, true), bottom = 3)
         add(
             root,
@@ -464,12 +464,13 @@ class MainActivity : Activity() {
             val pass = password.text.toString()
             val confirmText = confirm.text.toString()
 
+            val parsedAge = ageText.toIntOrNull()
             when {
                 name.isEmpty() -> {
                     nickname.error = "Digite seu apelido"
                     nickname.requestFocus()
                 }
-                ageText.toIntOrNull() !in 1..120 -> {
+                parsedAge == null || parsedAge !in 1..120 -> {
                     age.error = "Digite uma idade válida"
                     age.requestFocus()
                 }
@@ -488,7 +489,7 @@ class MainActivity : Activity() {
                 }
                 else -> {
                     val saved = createAccount(
-                        name, ageText.toInt(), bioText, emailText, pass
+                        name, parsedAge!!, bioText, emailText, pass
                     )
                     if (saved) {
                         Toast.makeText(
@@ -527,7 +528,7 @@ class MainActivity : Activity() {
         val brand = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
         }
-        add(brand, label("◈ ENTEREX", 21f, silver, true))
+        add(brand, label("🐉  ENTEREX", 21f, silver, true))
         add(brand, label("DEVICE MANAGER", 9f, muted))
         header.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
 
