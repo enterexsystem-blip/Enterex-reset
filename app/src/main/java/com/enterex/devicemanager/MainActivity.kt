@@ -435,7 +435,28 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         window.statusBarColor = black
         window.navigationBarColor = black
-        showLogin()
+        showSplash()
+    }
+
+    private fun showSplash() {
+        val (scroll, root) = createRoot()
+        root.gravity = Gravity.CENTER
+        val title = label("ENTEREX", 34f, silver, true).apply {
+            typeface = Typeface.create("sans-serif-black", Typeface.BOLD)
+            letterSpacing = 0.16f
+            alpha = 0f
+        }
+        add(root, title, bottom = 8)
+        add(root, label("DEVICE MANAGEMENT", 10f, muted, true))
+        setContentView(scroll)
+        title.animate().alpha(1f).setDuration(450L).start()
+        Handler(Looper.getMainLooper()).postDelayed({
+            if (!isFinishing && !isDestroyed) {
+                title.animate().alpha(0f).setDuration(450L).withEndAction {
+                    if (!isFinishing && !isDestroyed) showLogin()
+                }.start()
+            }
+        }, 1800L)
     }
 
     private fun showLogin() {
@@ -925,8 +946,8 @@ class MainActivity : Activity() {
                 incidentCode.error = "Informe um código"
                 incidentCode.requestFocus()
             } else {
-                val severity = IncidentSeverityPolicy.classify(code)
-                val decision = IncidentSeverityPolicy.decisionForCode(code)
+                val severity = PolicyIncidentSeverityPolicy.classify(code)
+                val decision = PolicyIncidentSeverityPolicy.decisionForCode(code)
                 val severityText = severity?.name ?: "UNKNOWN"
                 val decisionText = when (decision) {
                     MaintenanceDecision.AUTOMATIC_SAFE_MAINTENANCE ->
