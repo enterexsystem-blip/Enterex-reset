@@ -4,6 +4,8 @@ package com.enterex.devicemanager
 import android.app.Activity
 import android.app.AlertDialog
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.BitmapFactory
@@ -265,7 +267,7 @@ class MainActivity : Activity() {
                             .putBoolean("consent_$accountKey", true)
                             .apply()
                         dialog.dismiss()
-                        showDashboard()
+                        showCreatorIntro()
                     }
                     1 -> {
                         currentAccount = JSONObject()
@@ -288,6 +290,30 @@ class MainActivity : Activity() {
         dialog.show()
     }
 
+    private fun showCreatorIntro() {
+        val (scroll, root) = createRoot()
+        root.gravity = Gravity.CENTER
+        root.setPadding(dp(24), dp(24), dp(24), dp(24))
+        val intro = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            alpha = 1f
+        }
+        add(intro, label("🐉", 58f, silver, true), bottom = 12)
+        add(intro, label("KYODAI // 4CHAN", 25f, silver, true), bottom = 14)
+        add(intro, label("CRIADOR DO ENTEREX", 11f, muted, true), bottom = 10)
+        add(intro, label("OBRIGADO POR USAR", 10f, silver), bottom = 26)
+        val progress = View(this).apply { background = shape(silver, Color.TRANSPARENT, 2) }
+        intro.addView(progress, LinearLayout.LayoutParams(dp(96), dp(2)).apply { gravity = Gravity.CENTER })
+        root.addView(intro, LinearLayout.LayoutParams(-1, -2))
+        setContentView(scroll)
+        Handler(Looper.getMainLooper()).postDelayed({
+            if (isFinishing || isDestroyed) return@postDelayed
+            intro.animate().alpha(0f).setDuration(1100L).withEndAction {
+                if (!isFinishing && !isDestroyed) showDashboard()
+            }.start()
+        }, 1500L)
+    }
     private fun normalizedEmail(email: String) =
         email.trim().lowercase(java.util.Locale.ROOT)
 
