@@ -9,58 +9,75 @@ import android.graphics.drawable.GradientDrawable
 import android.text.InputType
 import android.view.Gravity
 import android.view.View
-import android.widget.*
+import android.widget.Button
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.TextView
+import android.widget.Toast
 
 class MainActivity : Activity() {
 
-    private val black = Color.rgb(5, 5, 6)
-    private val panel = Color.rgb(12, 12, 13)
-    private val silver = Color.rgb(230, 232, 236)
-    private val muted = Color.rgb(155, 160, 170)
-    private val line = Color.rgb(125, 130, 140)
+    private val black = Color.rgb(5, 6, 8)
+    private val panel = Color.rgb(15, 17, 21)
+    private val silver = Color.rgb(225, 229, 235)
+    private val muted = Color.rgb(135, 143, 153)
+    private val line = Color.rgb(58, 64, 73)
 
-    private fun dp(n: Int): Int =
-        (n * resources.displayMetrics.density).toInt()
+    private fun dp(value: Int): Int {
+        return (value * resources.displayMetrics.density).toInt()
+    }
 
     private fun shape(
         color: Int,
-        stroke: Int = Color.TRANSPARENT,
-        radius: Float = 5f,
-        strokeWidth: Int = 1
-    ) = GradientDrawable().apply {
-        setColor(color)
-        cornerRadius = dp(radius).toFloat()
-        if (stroke != Color.TRANSPARENT) {
-            setStroke(dp(strokeWidth), stroke)
+        strokeColor: Int = Color.TRANSPARENT,
+        radius: Int = 12
+    ): GradientDrawable {
+        return GradientDrawable().apply {
+            setColor(color)
+            cornerRadius = dp(radius).toFloat()
+
+            if (strokeColor != Color.TRANSPARENT) {
+                setStroke(dp(1), strokeColor)
+            }
         }
     }
 
     private fun label(
-        value: String,
+        text: String,
         size: Float,
         color: Int = silver,
         bold: Boolean = false
-    ) = TextView(this).apply {
-        text = value
-        textSize = size
-        setTextColor(color)
-        gravity = Gravity.CENTER
-        if (bold) setTypeface(Typeface.DEFAULT, Typeface.BOLD)
-        letterSpacing = if (size >= 20f) 0.08f else 0.04f
+    ): TextView {
+        return TextView(this).apply {
+            this.text = text
+            textSize = size
+            setTextColor(color)
+            gravity = Gravity.CENTER
+            typeface = if (bold) {
+                Typeface.create("sans-serif", Typeface.BOLD)
+            } else {
+                Typeface.create("sans-serif", Typeface.NORMAL)
+            }
+        }
     }
 
     private fun add(
         parent: LinearLayout,
         view: View,
-        height: Int = -2,
-        top: Int = 0
+        top: Int = 0,
+        bottom: Int = 0
     ) {
-        parent.addView(view, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            if (height == -2) -2 else dp(height)
-        ).apply {
-            topMargin = dp(top)
-        })
+        parent.addView(
+            view,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = dp(top)
+                bottomMargin = dp(bottom)
+            }
+        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -73,195 +90,283 @@ class MainActivity : Activity() {
         val scroll = ScrollView(this).apply {
             setBackgroundColor(black)
             isFillViewport = true
+            clipToPadding = false
         }
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(dp(24), dp(12), dp(24), dp(20))
+            setPadding(dp(24), dp(22), dp(24), dp(26))
             setBackgroundColor(black)
         }
 
         scroll.addView(root)
+        setContentView(scroll)
 
+        // Top bar
         val topBar = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
-        val version = label(
-            "ENTEREX\nDEVICE MANAGER\nv1.0.0",
-            10f, muted
-        ).apply {
-            gravity = Gravity.START
-            setLineSpacing(dp(3).toFloat(), 1f)
-        }
-        topBar.addView(version, LinearLayout.LayoutParams(0, -2, 1f))
-        topBar.addView(label("◆  ◢  ▣", 13f, silver))
-        add(root, topBar)
 
-        // Área reservada para o emblema principal.
-        // O dragão original será adicionado como recurso de imagem.
-        val emblem = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setPadding(0, dp(24), 0, dp(2))
+        val topTitle = TextView(this).apply {
+            text = "ENTEREX"
+            textSize = 15f
+            letterSpacing = 0.18f
+            setTextColor(silver)
+            typeface = Typeface.DEFAULT_BOLD
         }
 
-        emblem.addView(label("◈", 82f, silver, true))
-        emblem.addView(
-            label("ENTEREX", 37f, silver, true),
-            LinearLayout.LayoutParams(-1, -2)
+        topBar.addView(
+            topTitle,
+            LinearLayout.LayoutParams(0, dp(34), 1f)
         )
-        emblem.addView(label(
-            "D E V I C E   M A N A G E R", 11f, muted
-        ))
-        add(root, emblem, top = 5)
 
-        add(root, label(
+        val version = label("SYSTEM ONLINE  •  V1.0", 9f, muted)
+        version.gravity = Gravity.CENTER_VERTICAL or Gravity.END
+        topBar.addView(version)
+
+        add(root, topBar, bottom = 28)
+
+        // Emblem placeholder
+        val emblem = TextView(this).apply {
+            text = "◈"
+            textSize = 76f
+            gravity = Gravity.CENTER
+            setTextColor(silver)
+            typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
+        }
+
+        add(root, emblem, bottom = 4)
+
+        // Brand
+        val brand = label("ENTEREX", 32f, silver, true).apply {
+            letterSpacing = 0.22f
+        }
+        add(root, brand)
+
+        val subtitle = label("DEVICE MANAGER", 11f, muted).apply {
+            letterSpacing = 0.30f
+        }
+        add(root, subtitle, bottom = 12)
+
+        val divider = View(this).apply {
+            setBackgroundColor(line)
+        }
+
+        root.addView(
+            divider,
+            LinearLayout.LayoutParams(dp(76), dp(1)).apply {
+                gravity = Gravity.CENTER
+                bottomMargin = dp(14)
+            }
+        )
+
+        val motto = label(
             "CONTROLE. SEGURANÇA.\nSEMPRE COM VOCÊ.",
-            12f, silver, true
-        ), top = 15)
+            11f,
+            silver
+        ).apply {
+            letterSpacing = 0.08f
+            setLineSpacing(dp(4).toFloat(), 1f)
+        }
 
-        val form = LinearLayout(this).apply {
+        add(root, motto, bottom = 28)
+
+        // Login panel
+        val loginPanel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(14), dp(18), dp(14), dp(18))
-            background = shape(panel, line, 8f)
+            setPadding(dp(18), dp(20), dp(18), dp(20))
+            background = shape(panel, line, 14)
         }
 
-        fun inputField(
-            hintText: String,
-            icon: String,
-            type: Int
-        ): EditText {
-            val row = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                background = shape(black, line, 5f)
-                setPadding(dp(12), 0, dp(10), 0)
-            }
+        add(root, loginPanel, bottom = 16)
 
-            row.addView(label(icon, 23f, silver),
-                LinearLayout.LayoutParams(dp(38), dp(54)))
+        val welcome = label("ACESSO AO SISTEMA", 13f, silver, true)
+        welcome.gravity = Gravity.CENTER_VERTICAL
+        add(loginPanel, welcome, bottom = 6)
 
-            val edit = EditText(this).apply {
-                hint = hintText
-                setHintTextColor(muted)
-                setTextColor(silver)
-                textSize = 16f
-                inputType = type
-                singleLine = true
-                background = null
-                setPadding(dp(10), dp(10), dp(8), dp(10))
-            }
+        val description = label(
+            "Entre com sua conta para continuar.",
+            11f,
+            muted
+        )
+        description.gravity = Gravity.CENTER_VERTICAL
+        add(loginPanel, description, bottom = 20)
 
-            row.addView(edit, LinearLayout.LayoutParams(0, dp(54), 1f))
-            add(form, row)
-            return edit
-        }
-
-        val email = inputField(
+        val emailInput = inputField(
             "E-mail",
-            "♙",
             InputType.TYPE_CLASS_TEXT or
                 InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
         )
+        add(loginPanel, emailInput, bottom = 12)
 
-        val password = inputField(
+        val passwordInput = inputField(
             "Senha",
-            "▣",
             InputType.TYPE_CLASS_TEXT or
                 InputType.TYPE_TEXT_VARIATION_PASSWORD
         )
-        (password.parent as View).let {
-            (it.layoutParams as LinearLayout.LayoutParams).topMargin = dp(12)
-        }
+        add(loginPanel, passwordInput, bottom = 8)
 
-        val forgot = label("Esqueci minha senha", 13f, silver).apply {
+        val forgot = TextView(this).apply {
+            text = "Esqueceu sua senha?"
+            textSize = 11f
+            setTextColor(silver)
             gravity = Gravity.END
-            paintFlags = paintFlags or 8
-            setPadding(0, dp(14), dp(2), dp(18))
-            setOnClickListener {
-                Toast.makeText(
-                    this@MainActivity,
-                    "A recuperação de conta será implementada na etapa de autenticação.",
-                    Toast.LENGTH_LONG
-                ).show()
-            }
+            setPadding(0, dp(8), 0, dp(8))
         }
-        add(form, forgot)
+        add(loginPanel, forgot, bottom = 14)
 
-        val login = Button(this).apply {
-            text = "➜     E N T R A R"
-            textSize = 16f
+        // Enter button
+        val enterButton = Button(this).apply {
+            text = "ENTRAR"
+            textSize = 13f
+            letterSpacing = 0.12f
             setTextColor(black)
-            setTypeface(Typeface.DEFAULT, Typeface.BOLD)
-            background = shape(silver, Color.WHITE, 5f)
+            typeface = Typeface.DEFAULT_BOLD
             isAllCaps = false
-            setOnClickListener {
-                if (email.text.isNullOrBlank() ||
-                    password.text.isNullOrBlank()) {
+            background = shape(silver, radius = 10)
+            minHeight = dp(50)
+            setPadding(dp(12), 0, dp(12), 0)
+        }
+
+        add(loginPanel, enterButton, bottom = 10)
+
+        // Create account button
+        val createButton = Button(this).apply {
+            text = "CRIAR CONTA"
+            textSize = 12f
+            letterSpacing = 0.08f
+            setTextColor(silver)
+            isAllCaps = false
+            background = shape(panel, line, 10)
+            minHeight = dp(48)
+            setPadding(dp(12), 0, dp(12), 0)
+        }
+
+        add(loginPanel, createButton)
+
+        // Footer features
+        val footerTitle = label(
+            "TECNOLOGIA AO SEU ALCANCE",
+            9f,
+            muted,
+            true
+        ).apply {
+            letterSpacing = 0.12f
+        }
+
+        add(root, footerTitle, top = 10, bottom = 16)
+
+        val features = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+        }
+
+        fun feature(symbol: String, title: String): LinearLayout {
+            val column = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+                setPadding(dp(4), 0, dp(4), 0)
+            }
+
+            val icon = label(symbol, 23f, silver)
+            column.addView(
+                icon,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    dp(34)
+                )
+            )
+
+            val caption = label(title, 9f, muted)
+            column.addView(caption)
+
+            return column
+        }
+
+        features.addView(
+            feature("⌘", "Dispositivos"),
+            LinearLayout.LayoutParams(0, dp(58), 1f)
+        )
+
+        features.addView(
+            feature("◇", "Restauração"),
+            LinearLayout.LayoutParams(0, dp(58), 1f)
+        )
+
+        features.addView(
+            feature("◎", "Controle"),
+            LinearLayout.LayoutParams(0, dp(58), 1f)
+        )
+
+        add(root, features, bottom = 18)
+
+        val footer = label(
+            "ENTEREX SYSTEMS  •  TODOS OS DIREITOS RESERVADOS",
+            8f,
+            muted
+        )
+        add(root, footer)
+
+        // Temporary interactions: authentication is not connected yet.
+        enterButton.setOnClickListener {
+            val email = emailInput.text.toString().trim()
+            val password = passwordInput.text.toString()
+
+            when {
+                email.isEmpty() -> {
+                    emailInput.error = "Digite seu e-mail"
+                    emailInput.requestFocus()
+                }
+
+                password.isEmpty() -> {
+                    passwordInput.error = "Digite sua senha"
+                    passwordInput.requestFocus()
+                }
+
+                else -> {
                     Toast.makeText(
-                        this@MainActivity,
-                        "Preencha seu e-mail e sua senha.",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                } else {
-                    Toast.makeText(
-                        this@MainActivity,
-                        "A interface está pronta; a autenticação ainda será conectada.",
+                        this,
+                        "Login ainda não conectado ao sistema.",
                         Toast.LENGTH_LONG
                     ).show()
                 }
             }
         }
-        add(form, login, 58)
 
-        val create = Button(this).apply {
-            text = "♙     C R I A R   C O N T A"
-            textSize = 14f
+        createButton.setOnClickListener {
+            Toast.makeText(
+                this,
+                "Cadastro ainda será implementado.",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+
+        forgot.setOnClickListener {
+            Toast.makeText(
+                this,
+                "Recuperação de senha ainda será implementada.",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
+    private fun inputField(
+        hintText: String,
+        inputTypeValue: Int
+    ): EditText {
+        return EditText(this).apply {
+            hint = hintText
+            textSize = 13f
             setTextColor(silver)
-            isAllCaps = false
-            background = shape(black, silver, 5f)
-            setOnClickListener {
-                Toast.makeText(
-                    this@MainActivity,
-                    "A tela de cadastro será a próxima etapa.",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
+            setHintTextColor(muted)
+            inputType = inputTypeValue
+            isSingleLine = true
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(14), 0, dp(14), 0)
+            background = shape(black, line, 10)
+            minHeight = dp(52)
         }
-        add(form, create, 56, 14)
-        add(root, form, top = 24)
-
-        val features = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER
-            setPadding(0, dp(28), 0, dp(8))
-        }
-
-        fun feature(symbol: String, title: String, subtitle: String) =
-            LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                gravity = Gravity.CENTER
-                addView(label(symbol, 26f, silver))
-                addView(label(title, 10f, muted, true))
-                addView(label(subtitle, 10f, muted, true))
-            }
-
-        features.addView(feature("⌕", "GERENCIAMENTO", "DE DISPOSITIVOS"),
-            LinearLayout.LayoutParams(0, -2, 1f))
-        features.addView(View(this).apply {
-            setBackgroundColor(line)
-        }, LinearLayout.LayoutParams(dp(1), dp(58)))
-        features.addView(feature("⬡", "RESTAURAÇÃO", "SEGURA"),
-            LinearLayout.LayoutParams(0, -2, 1f))
-        features.addView(View(this).apply {
-            setBackgroundColor(line)
-        }, LinearLayout.LayoutParams(dp(1), dp(58)))
-        features.addView(feature("ϟ", "MAIS", "CONTROLE"),
-            LinearLayout.LayoutParams(0, -2, 1f))
-
-        add(root, features, top = 10)
-        setContentView(scroll)
     }
 }
