@@ -1,16 +1,19 @@
-
 package com.enterex.devicemanager
 
 import android.app.Activity
 import android.os.Bundle
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.BitmapFactory
 import android.graphics.drawable.GradientDrawable
+import android.content.Intent
+import android.net.Uri
 import android.text.InputType
 import android.view.Gravity
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -23,6 +26,9 @@ class MainActivity : Activity() {
     private val silver = Color.rgb(225, 229, 235)
     private val muted = Color.rgb(135, 143, 153)
     private val line = Color.rgb(58, 64, 73)
+
+    private var profileImage: ImageView? = null
+    private var selectedPhoto: Uri? = null
 
     private fun dp(value: Int): Int {
         return (value * resources.displayMetrics.density).toInt()
@@ -54,10 +60,17 @@ class MainActivity : Activity() {
             textSize = size
             setTextColor(color)
             gravity = Gravity.CENTER
+
             typeface = if (bold) {
-                Typeface.create("sans-serif", Typeface.BOLD)
+                Typeface.create(
+                    "sans-serif",
+                    Typeface.BOLD
+                )
             } else {
-                Typeface.create("sans-serif", Typeface.NORMAL)
+                Typeface.create(
+                    "sans-serif",
+                    Typeface.NORMAL
+                )
             }
         }
     }
@@ -80,13 +93,7 @@ class MainActivity : Activity() {
         )
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        window.statusBarColor = black
-        window.navigationBarColor = black
-        window.decorView.systemUiVisibility = 0
-
+    private fun createRoot(): Pair<ScrollView, LinearLayout> {
         val scroll = ScrollView(this).apply {
             setBackgroundColor(black)
             isFillViewport = true
@@ -96,59 +103,66 @@ class MainActivity : Activity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(dp(24), dp(22), dp(24), dp(26))
+            setPadding(
+                dp(24),
+                dp(22),
+                dp(24),
+                dp(26)
+            )
             setBackgroundColor(black)
         }
 
         scroll.addView(root)
-        setContentView(scroll)
 
-        // Top bar
-        val topBar = LinearLayout(this).apply {
+        return Pair(scroll, root)
+    }
+
+    private fun addHeader(root: LinearLayout) {
+        val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
 
-        val topTitle = TextView(this).apply {
-            text = "ENTEREX"
-            textSize = 15f
+        val brand = label(
+            "ENTEREX",
+            15f,
+            silver,
+            true
+        ).apply {
             letterSpacing = 0.18f
-            setTextColor(silver)
-            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER_VERTICAL
         }
 
-        topBar.addView(
-            topTitle,
+        header.addView(
+            brand,
             LinearLayout.LayoutParams(0, dp(34), 1f)
         )
 
-        val version = label("SYSTEM ONLINE  •  V1.0", 9f, muted)
-        version.gravity = Gravity.CENTER_VERTICAL or Gravity.END
-        topBar.addView(version)
+        header.addView(
+            label("DEVICE MANAGER  •  V1.0", 9f, muted)
+        )
 
-        add(root, topBar, bottom = 28)
+        add(root, header, bottom = 24)
+    }
 
-        // Emblem placeholder
-        val emblem = TextView(this).apply {
-            text = "◈"
-            textSize = 76f
-            gravity = Gravity.CENTER
-            setTextColor(silver)
-            typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
-        }
+    private fun addBrand(root: LinearLayout) {
+        add(
+            root,
+            label("◈", 66f, silver),
+            bottom = 2
+        )
 
-        add(root, emblem, bottom = 4)
+        add(
+            root,
+            label("ENTEREX", 31f, silver, true),
+            bottom = 3
+        )
 
-        // Brand
-        val brand = label("ENTEREX", 32f, silver, true).apply {
-            letterSpacing = 0.22f
-        }
-        add(root, brand)
-
-        val subtitle = label("DEVICE MANAGER", 11f, muted).apply {
-            letterSpacing = 0.30f
-        }
-        add(root, subtitle, bottom = 12)
+        add(
+            root,
+            label("D E V I C E   M A N A G E R", 10f, muted),
+            bottom = 12
+        )
 
         val divider = View(this).apply {
             setBackgroundColor(line)
@@ -156,200 +170,14 @@ class MainActivity : Activity() {
 
         root.addView(
             divider,
-            LinearLayout.LayoutParams(dp(76), dp(1)).apply {
+            LinearLayout.LayoutParams(
+                dp(76),
+                dp(1)
+            ).apply {
                 gravity = Gravity.CENTER
-                bottomMargin = dp(14)
+                bottomMargin = dp(20)
             }
         )
-
-        val motto = label(
-            "CONTROLE. SEGURANÇA.\nSEMPRE COM VOCÊ.",
-            11f,
-            silver
-        ).apply {
-            letterSpacing = 0.08f
-            setLineSpacing(dp(4).toFloat(), 1f)
-        }
-
-        add(root, motto, bottom = 28)
-
-        // Login panel
-        val loginPanel = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(18), dp(20), dp(18), dp(20))
-            background = shape(panel, line, 14)
-        }
-
-        add(root, loginPanel, bottom = 16)
-
-        val welcome = label("ACESSO AO SISTEMA", 13f, silver, true)
-        welcome.gravity = Gravity.CENTER_VERTICAL
-        add(loginPanel, welcome, bottom = 6)
-
-        val description = label(
-            "Entre com sua conta para continuar.",
-            11f,
-            muted
-        )
-        description.gravity = Gravity.CENTER_VERTICAL
-        add(loginPanel, description, bottom = 20)
-
-        val emailInput = inputField(
-            "E-mail",
-            InputType.TYPE_CLASS_TEXT or
-                InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
-        )
-        add(loginPanel, emailInput, bottom = 12)
-
-        val passwordInput = inputField(
-            "Senha",
-            InputType.TYPE_CLASS_TEXT or
-                InputType.TYPE_TEXT_VARIATION_PASSWORD
-        )
-        add(loginPanel, passwordInput, bottom = 8)
-
-        val forgot = TextView(this).apply {
-            text = "Esqueceu sua senha?"
-            textSize = 11f
-            setTextColor(silver)
-            gravity = Gravity.END
-            setPadding(0, dp(8), 0, dp(8))
-        }
-        add(loginPanel, forgot, bottom = 14)
-
-        // Enter button
-        val enterButton = Button(this).apply {
-            text = "ENTRAR"
-            textSize = 13f
-            letterSpacing = 0.12f
-            setTextColor(black)
-            typeface = Typeface.DEFAULT_BOLD
-            isAllCaps = false
-            background = shape(silver, radius = 10)
-            minHeight = dp(50)
-            setPadding(dp(12), 0, dp(12), 0)
-        }
-
-        add(loginPanel, enterButton, bottom = 10)
-
-        // Create account button
-        val createButton = Button(this).apply {
-            text = "CRIAR CONTA"
-            textSize = 12f
-            letterSpacing = 0.08f
-            setTextColor(silver)
-            isAllCaps = false
-            background = shape(panel, line, 10)
-            minHeight = dp(48)
-            setPadding(dp(12), 0, dp(12), 0)
-        }
-
-        add(loginPanel, createButton)
-
-        // Footer features
-        val footerTitle = label(
-            "TECNOLOGIA AO SEU ALCANCE",
-            9f,
-            muted,
-            true
-        ).apply {
-            letterSpacing = 0.12f
-        }
-
-        add(root, footerTitle, top = 10, bottom = 16)
-
-        val features = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER
-        }
-
-        fun feature(symbol: String, title: String): LinearLayout {
-            val column = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                gravity = Gravity.CENTER
-                setPadding(dp(4), 0, dp(4), 0)
-            }
-
-            val icon = label(symbol, 23f, silver)
-            column.addView(
-                icon,
-                LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    dp(34)
-                )
-            )
-
-            val caption = label(title, 9f, muted)
-            column.addView(caption)
-
-            return column
-        }
-
-        features.addView(
-            feature("⌘", "Dispositivos"),
-            LinearLayout.LayoutParams(0, dp(58), 1f)
-        )
-
-        features.addView(
-            feature("◇", "Restauração"),
-            LinearLayout.LayoutParams(0, dp(58), 1f)
-        )
-
-        features.addView(
-            feature("◎", "Controle"),
-            LinearLayout.LayoutParams(0, dp(58), 1f)
-        )
-
-        add(root, features, bottom = 18)
-
-        val footer = label(
-            "ENTEREX SYSTEMS  •  TODOS OS DIREITOS RESERVADOS",
-            8f,
-            muted
-        )
-        add(root, footer)
-
-        // Temporary interactions: authentication is not connected yet.
-        enterButton.setOnClickListener {
-            val email = emailInput.text.toString().trim()
-            val password = passwordInput.text.toString()
-
-            when {
-                email.isEmpty() -> {
-                    emailInput.error = "Digite seu e-mail"
-                    emailInput.requestFocus()
-                }
-
-                password.isEmpty() -> {
-                    passwordInput.error = "Digite sua senha"
-                    passwordInput.requestFocus()
-                }
-
-                else -> {
-                    Toast.makeText(
-                        this,
-                        "Login ainda não conectado ao sistema.",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            }
-        }
-
-        createButton.setOnClickListener {
-            Toast.makeText(
-                this,
-                "Cadastro ainda será implementado.",
-                Toast.LENGTH_LONG
-            ).show()
-        }
-
-        forgot.setOnClickListener {
-            Toast.makeText(
-                this,
-                "Recuperação de senha ainda será implementada.",
-                Toast.LENGTH_LONG
-            ).show()
-        }
     }
 
     private fun inputField(
@@ -358,15 +186,659 @@ class MainActivity : Activity() {
     ): EditText {
         return EditText(this).apply {
             hint = hintText
-            textSize = 13f
+            textSize = 14f
+
             setTextColor(silver)
             setHintTextColor(muted)
+
             inputType = inputTypeValue
             isSingleLine = true
+
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(14), 0, dp(14), 0)
-            background = shape(black, line, 10)
+
+            setPadding(
+                dp(14),
+                dp(4),
+                dp(14),
+                dp(4)
+            )
+
+            background = shape(
+                black,
+                line,
+                10
+            )
+
             minHeight = dp(52)
+        }
+    }
+
+    private fun makeButton(
+        textValue: String,
+        filled: Boolean
+    ): Button {
+        return Button(this).apply {
+            text = textValue
+            textSize = 13f
+            isAllCaps = false
+
+            letterSpacing = 0.08f
+
+            setTextColor(
+                if (filled) black else silver
+            )
+
+            typeface = Typeface.DEFAULT_BOLD
+
+            background = if (filled) {
+                shape(silver, radius = 10)
+            } else {
+                shape(panel, line, 10)
+            }
+
+            minHeight = dp(50)
+
+            setPadding(
+                dp(12),
+                0,
+                dp(12),
+                0
+            )
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        window.statusBarColor = black
+        window.navigationBarColor = black
+
+        showLogin()
+    }
+
+    // ==================================================
+    // TELA 1 - LOGIN
+    // ==================================================
+
+    private fun showLogin() {
+        val (scroll, root) = createRoot()
+
+        addHeader(root)
+        addBrand(root)
+
+        add(
+            root,
+            label(
+                "CONTROLE. SEGURANÇA.\nSEMPRE COM VOCÊ.",
+                11f,
+                silver
+            ),
+            bottom = 24
+        )
+
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+
+            setPadding(
+                dp(18),
+                dp(20),
+                dp(18),
+                dp(20)
+            )
+
+            background = shape(
+                panel,
+                line,
+                14
+            )
+        }
+
+        add(root, card, bottom = 20)
+
+        add(
+            card,
+            label(
+                "ACESSO AO SISTEMA",
+                13f,
+                silver,
+                true
+            ),
+            bottom = 6
+        )
+
+        add(
+            card,
+            label(
+                "Entre com sua conta para continuar.",
+                11f,
+                muted
+            ),
+            bottom = 20
+        )
+
+        val email = inputField(
+            "E-mail",
+            InputType.TYPE_CLASS_TEXT or
+                InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+        )
+
+        add(card, email, bottom = 12)
+
+        val password = inputField(
+            "Senha",
+            InputType.TYPE_CLASS_TEXT or
+                InputType.TYPE_TEXT_VARIATION_PASSWORD
+        )
+
+        add(card, password, bottom = 8)
+
+        val forgot = label(
+            "Esqueceu sua senha?",
+            11f,
+            silver
+        ).apply {
+            gravity = Gravity.END
+            setPadding(0, dp(8), 0, dp(16))
+        }
+
+        add(card, forgot)
+
+        val enter = makeButton(
+            "ENTRAR",
+            true
+        )
+
+        add(card, enter, bottom = 10)
+
+        val create = makeButton(
+            "CRIAR CONTA",
+            false
+        )
+
+        add(card, create)
+
+        add(
+            root,
+            label(
+                "TECNOLOGIA AO SEU ALCANCE",
+                9f,
+                muted,
+                true
+            ),
+            top = 10,
+            bottom = 16
+        )
+
+        val footer = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+        }
+
+        val features = listOf(
+            "⌘" to "Dispositivos",
+            "◇" to "Restauração",
+            "◎" to "Controle"
+        )
+
+        features.forEach { item ->
+            val column = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+            }
+
+            add(
+                column,
+                label(item.first, 23f, silver)
+            )
+
+            add(
+                column,
+                label(item.second, 9f, muted)
+            )
+
+            footer.addView(
+                column,
+                LinearLayout.LayoutParams(
+                    0,
+                    dp(58),
+                    1f
+                )
+            )
+        }
+
+        add(root, footer, bottom = 18)
+
+        add(
+            root,
+            label(
+                "ENTEREX SYSTEMS",
+                8f,
+                muted
+            )
+        )
+
+        create.setOnClickListener {
+            showRegistration()
+        }
+
+        enter.setOnClickListener {
+            when {
+                email.text.isNullOrBlank() -> {
+                    email.error = "Digite seu e-mail"
+                    email.requestFocus()
+                }
+
+                password.text.isNullOrBlank() -> {
+                    password.error = "Digite sua senha"
+                    password.requestFocus()
+                }
+
+                else -> {
+                    Toast.makeText(
+                        this,
+                        "O login ainda precisa ser conectado.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+
+        forgot.setOnClickListener {
+            Toast.makeText(
+                this,
+                "A recuperação de senha será implementada.",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+
+        setContentView(scroll)
+    }
+
+    // ==================================================
+    // TELA 2 - CADASTRO
+    // ==================================================
+
+    private fun showRegistration() {
+        val (scroll, root) = createRoot()
+
+        profileImage = null
+
+        addHeader(root)
+        addBrand(root)
+
+        add(
+            root,
+            label(
+                "CRIE SUA CONTA",
+                20f,
+                silver,
+                true
+            ),
+            bottom = 6
+        )
+
+        add(
+            root,
+            label(
+                "Faça parte do sistema ENTEREX.",
+                12f,
+                muted
+            ),
+            bottom = 22
+        )
+
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+
+            setPadding(
+                dp(18),
+                dp(20),
+                dp(18),
+                dp(20)
+            )
+
+            background = shape(
+                panel,
+                line,
+                14
+            )
+        }
+
+        add(root, card, bottom = 18)
+
+        add(
+            card,
+            label(
+                "DADOS DO USUÁRIO",
+                12f,
+                silver,
+                true
+            ),
+            bottom = 16
+        )
+
+        // FOTO DE PERFIL
+
+        add(
+            card,
+            label(
+                "FOTO DE PERFIL",
+                10f,
+                muted,
+                true
+            ),
+            bottom = 10
+        )
+
+        val avatar = ImageView(this).apply {
+            setImageDrawable(
+                shape(
+                    black,
+                    line,
+                    60
+                )
+            )
+
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            background = shape(black, line, 60)
+            clipToOutline = true
+        }
+
+        profileImage = avatar
+
+        card.addView(
+            avatar,
+            LinearLayout.LayoutParams(
+                dp(92),
+                dp(92)
+            ).apply {
+                gravity = Gravity.CENTER
+                bottomMargin = dp(12)
+            }
+        )
+
+        val photoButton = makeButton(
+            "ADICIONAR FOTO (OPCIONAL)",
+            false
+        )
+
+        add(card, photoButton, bottom = 20)
+
+        photoButton.setOnClickListener {
+            val intent = Intent(
+                Intent.ACTION_GET_CONTENT
+            ).apply {
+                type = "image/*"
+            }
+
+            @Suppress("DEPRECATION")
+            startActivityForResult(
+                Intent.createChooser(
+                    intent,
+                    "Escolha sua foto de perfil"
+                ),
+                1001
+            )
+        }
+
+        // APELIDO
+
+        add(
+            card,
+            label("APELIDO", 10f, muted, true),
+            bottom = 7
+        )
+
+        val nickname = inputField(
+            "Como quer ser chamado?",
+            InputType.TYPE_CLASS_TEXT or
+                InputType.TYPE_TEXT_FLAG_CAP_WORDS
+        )
+
+        add(card, nickname, bottom = 14)
+
+        // IDADE
+
+        add(
+            card,
+            label("IDADE", 10f, muted, true),
+            bottom = 7
+        )
+
+        val age = inputField(
+            "Sua idade",
+            InputType.TYPE_CLASS_NUMBER
+        )
+
+        add(card, age, bottom = 14)
+
+        // BIOGRAFIA OPCIONAL
+
+        add(
+            card,
+            label(
+                "BIOGRAFIA (OPCIONAL)",
+                10f,
+                muted,
+                true
+            ),
+            bottom = 7
+        )
+
+        val bio = EditText(this).apply {
+            hint = "Conte um pouco sobre você..."
+            textSize = 14f
+
+            setTextColor(silver)
+            setHintTextColor(muted)
+
+            inputType =
+                InputType.TYPE_CLASS_TEXT or
+                InputType.TYPE_TEXT_FLAG_CAP_SENTENCES or
+                InputType.TYPE_TEXT_FLAG_MULTI_LINE
+
+            gravity = Gravity.TOP or Gravity.START
+
+            minHeight = dp(90)
+
+            setPadding(
+                dp(14),
+                dp(12),
+                dp(14),
+                dp(12)
+            )
+
+            background = shape(
+                black,
+                line,
+                10
+            )
+        }
+
+        add(card, bio, bottom = 14)
+
+        // E-MAIL
+
+        add(
+            card,
+            label("E-MAIL", 10f, muted, true),
+            bottom = 7
+        )
+
+        val email = inputField(
+            "Digite seu e-mail",
+            InputType.TYPE_CLASS_TEXT or
+                InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+        )
+
+        add(card, email, bottom = 14)
+
+        // SENHA
+
+        add(
+            card,
+            label("SENHA", 10f, muted, true),
+            bottom = 7
+        )
+
+        val password = inputField(
+            "Crie uma senha",
+            InputType.TYPE_CLASS_TEXT or
+                InputType.TYPE_TEXT_VARIATION_PASSWORD
+        )
+
+        add(card, password, bottom = 14)
+
+        // CONFIRMAR SENHA
+
+        add(
+            card,
+            label("CONFIRMAR SENHA", 10f, muted, true),
+            bottom = 7
+        )
+
+        val confirmPassword = inputField(
+            "Digite a senha novamente",
+            InputType.TYPE_CLASS_TEXT or
+                InputType.TYPE_TEXT_VARIATION_PASSWORD
+        )
+
+        add(card, confirmPassword, bottom = 20)
+
+        // BOTÃO CADASTRAR
+
+        val registerButton = makeButton(
+            "CADASTRAR",
+            true
+        )
+
+        add(card, registerButton, bottom = 10)
+
+        // VOLTAR AO LOGIN
+
+        val backButton = makeButton(
+            "JÁ TENHO UMA CONTA — FAZER LOGIN",
+            false
+        )
+
+        add(card, backButton)
+
+        registerButton.setOnClickListener {
+            val nameValue =
+                nickname.text.toString().trim()
+
+            val ageValue =
+                age.text.toString().trim()
+
+            val emailValue =
+                email.text.toString().trim()
+
+            val passwordValue =
+                password.text.toString()
+
+            val confirmValue =
+                confirmPassword.text.toString()
+
+            when {
+                nameValue.isEmpty() -> {
+                    nickname.error = "Digite seu apelido"
+                    nickname.requestFocus()
+                }
+
+                ageValue.isEmpty() -> {
+                    age.error = "Digite sua idade"
+                    age.requestFocus()
+                }
+
+                ageValue.toIntOrNull() == null ||
+                    ageValue.toInt() !in 1..120 -> {
+                    age.error = "Digite uma idade válida"
+                    age.requestFocus()
+                }
+
+                emailValue.isEmpty() ||
+                    !android.util.Patterns.EMAIL_ADDRESS
+                        .matcher(emailValue)
+                        .matches() -> {
+                    email.error = "Digite um e-mail válido"
+                    email.requestFocus()
+                }
+
+                passwordValue.length < 8 -> {
+                    password.error =
+                        "Use pelo menos 8 caracteres"
+                    password.requestFocus()
+                }
+
+                passwordValue != confirmValue -> {
+                    confirmPassword.error =
+                        "As senhas não são iguais"
+                    confirmPassword.requestFocus()
+                }
+
+                else -> {
+                    Toast.makeText(
+                        this,
+                        "Formulário validado! A criação da conta ainda precisa ser conectada.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+
+        backButton.setOnClickListener {
+            showLogin()
+        }
+
+        add(
+            root,
+            label(
+                "ENTEREX SYSTEMS",
+                8f,
+                muted
+            ),
+            bottom = 8
+        )
+
+        setContentView(scroll)
+    }
+
+    @Deprecated("Usado para selecionar a foto de perfil")
+    override fun onActivityResult(
+        requestCode: Int,
+        resultCode: Int,
+        data: Intent?
+    ) {
+        super.onActivityResult(
+            requestCode,
+            resultCode,
+            data
+        )
+
+        if (
+            requestCode == 1001 &&
+            resultCode == RESULT_OK
+        ) {
+            val uri = data?.data ?: return
+
+            try {
+                contentResolver.openInputStream(uri)
+                    ?.use { stream ->
+                        val bitmap =
+                            BitmapFactory.decodeStream(stream)
+
+                        if (bitmap != null) {
+                            profileImage?.setImageBitmap(bitmap)
+                            selectedPhoto = uri
+                        }
+                    }
+            } catch (e: Exception) {
+                Toast.makeText(
+                    this,
+                    "Não foi possível abrir essa imagem.",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         }
     }
 }
