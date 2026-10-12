@@ -748,9 +748,6 @@ class MainActivity : Activity() {
         val (scroll, root) = createRoot()
         root.setPadding(dp(18), dp(18), dp(18), dp(14))
 
-        val nickname = currentAccount.optString("nickname", "Usuário")
-            .ifBlank { "Usuário" }
-
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -763,15 +760,34 @@ class MainActivity : Activity() {
         add(brand, label("DEVICE MANAGER", 9f, muted))
         header.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
 
-        val profile = TextView(this).apply {
-            text = "◉"
+        val actions = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val notifications = TextView(this).apply {
+            text = "♧"
             textSize = 25f
-            setTextColor(silver)
-            setPadding(dp(12), dp(8), dp(4), dp(8))
+            gravity = Gravity.CENTER
+            setTextColor(Color.WHITE)
+            background = shape(Color.rgb(24, 27, 33), Color.rgb(115, 125, 140), 12)
+            contentDescription = "Notificações"
+            setOnClickListener { showNotifications() }
+        }
+        actions.addView(notifications, LinearLayout.LayoutParams(dp(44), dp(44)).apply {
+            marginEnd = dp(8)
+        })
+        val profile = TextView(this).apply {
+            text = "♙"
+            textSize = 25f
+            gravity = Gravity.CENTER
+            setTextColor(Color.WHITE)
+            background = shape(Color.rgb(24, 27, 33), Color.rgb(115, 125, 140), 22)
+            contentDescription = "Meu perfil"
             setOnClickListener { showProfile() }
         }
-        header.addView(profile)
-        add(root, header, bottom = 28)
+        actions.addView(profile, LinearLayout.LayoutParams(dp(44), dp(44)))
+        header.addView(actions)
+        add(root, header, bottom = 24)
 
         add(root, label("PAINEL DE CONTROLE", 10f, muted, true),
             bottom = 8)
@@ -803,15 +819,6 @@ class MainActivity : Activity() {
             12f, muted
         ).apply { gravity = Gravity.START })
         add(root, status, bottom = 22)
-
-        val plansCard = card()
-        add(plansCard, label("PLANOS DE ACESSO", 12f, silver, true), bottom = 8)
-        add(plansCard, label("7 dias — R$ 15,00  •  15 dias — R$ 30,00  •  1 mês — R$ 50,00", 13f, Color.WHITE, true), bottom = 8)
-        add(plansCard, label("Pagamento online ainda não integrado. Nenhuma cobrança ou ativação será feita aqui.", 11f, muted), bottom = 10)
-        val plansButton = makeButton("VER PLANOS", false)
-        add(plansCard, plansButton)
-        plansButton.setOnClickListener { showPlans() }
-        add(root, plansCard, bottom = 20)
 
         add(root, label("ACESSO RÁPIDO", 12f, muted, true), bottom = 12)
 
@@ -869,10 +876,7 @@ class MainActivity : Activity() {
         )
         quickRow(
             Triple("◉", "Meu perfil", { showProfile() }),
-            Triple("↪", "Sair da conta", {
-                currentAccount = JSONObject()
-                showLogin()
-            })
+            Triple("♧", "Notificações", { showNotifications() })
         )
         quickRow(
             Triple("⚙", "Configurações", { showSettings() }),
@@ -891,13 +895,6 @@ class MainActivity : Activity() {
             12f, muted
         ).apply { gravity = Gravity.CENTER })
         add(root, empty, bottom = 22)
-
-        val logout = makeButton("SAIR DA CONTA", false)
-        add(root, logout, bottom = 12)
-        logout.setOnClickListener {
-            currentAccount = JSONObject()
-            showLogin()
-        }
 
         add(root, label("ENTEREX SYSTEMS", 8f, muted), top = 10)
         setContentView(scroll)
@@ -930,6 +927,20 @@ class MainActivity : Activity() {
             add(root, item, bottom = 12)
         }
         add(root, label("A ativação depende da integração segura de pagamentos e servidor.", 11f, muted), bottom = 18)
+        val back = makeButton("VOLTAR AO PAINEL", true)
+        add(root, back)
+        back.setOnClickListener { showDashboard() }
+        setContentView(scroll)
+    }
+
+    private fun showNotifications() {
+        val (scroll, root) = createRoot()
+        addHeader(root)
+        add(root, label("CENTRAL DE NOTIFICAÇÕES", 20f, silver, true), bottom = 16)
+        val notice = card()
+        add(notice, label("Nenhuma notificação nova", 15f, silver, true), bottom = 8)
+        add(notice, label("Avisos de conta, plano e suporte aparecerão aqui quando os serviços correspondentes estiverem integrados.", 12f, muted))
+        add(root, notice, bottom = 18)
         val back = makeButton("VOLTAR AO PAINEL", true)
         add(root, back)
         back.setOnClickListener { showDashboard() }
