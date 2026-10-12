@@ -29,10 +29,10 @@ import javax.crypto.spec.PBEKeySpec
 class MainActivity : Activity() {
 
     private val black = Color.rgb(5, 6, 8)
-    private val panel = Color.rgb(15, 17, 21)
+    private val panel = Color.rgb(5, 6, 8)
     private val silver = Color.rgb(225, 229, 235)
     private val muted = Color.rgb(135, 143, 153)
-    private val line = Color.rgb(58, 64, 73)
+    private val line = Color.rgb(235, 238, 242)
     private val accent = Color.rgb(180, 190, 205)
 
     private val accounts by lazy {
@@ -161,7 +161,7 @@ class MainActivity : Activity() {
             isSingleLine = true
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(14), dp(4), dp(14), dp(4))
-            background = shape(black, line, 10)
+            background = shape(black, Color.WHITE, 10)
             minHeight = dp(52)
         }
 
@@ -171,10 +171,9 @@ class MainActivity : Activity() {
             textSize = 13f
             isAllCaps = false
             letterSpacing = 0.03f
-            setTextColor(if (filled) black else silver)
+            setTextColor(Color.WHITE)
             typeface = Typeface.DEFAULT_BOLD
-            background = if (filled) shape(silver, radius = 10)
-                else shape(panel, line, 10)
+            background = shape(black, Color.WHITE, 10)
             minHeight = dp(48)
             setPadding(dp(12), 0, dp(12), 0)
         }
