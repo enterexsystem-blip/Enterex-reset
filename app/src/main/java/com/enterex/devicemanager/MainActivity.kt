@@ -574,37 +574,65 @@ class MainActivity : Activity() {
 
         add(root, label("ACESSO RÁPIDO", 12f, muted, true), bottom = 12)
 
-        val quickRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
+        val quickGrid = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
         }
 
-        fun quickItem(
-            symbol: String,
-            title: String,
-            subtitle: String,
-            action: () -> Unit
-        ) {
-            val item = card()
-            add(item, label(symbol, 27f, silver, true), bottom = 10)
-            add(item, label(title, 14f, silver, true), bottom = 5)
-            add(item, label(subtitle, 11f, muted))
-            item.setOnClickListener { action() }
-
-            quickRow.addView(
-                item,
-                LinearLayout.LayoutParams(0, -2, 1f).apply {
-                    marginEnd = dp(6)
+        fun quickRow(vararg items: Triple<String, String, () -> Unit>) {
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+            }
+            items.forEachIndexed { index, entry ->
+                val tile = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    gravity = Gravity.CENTER_VERTICAL
+                    isClickable = true
+                    isFocusable = true
+                    setPadding(dp(16), dp(16), dp(12), dp(16))
+                    background = shape(black, Color.WHITE, 14)
+                    setOnClickListener { entry.third.invoke() }
                 }
-            )
+                val iconBox = TextView(this).apply {
+                    text = entry.first
+                    textSize = 24f
+                    gravity = Gravity.CENTER
+                    setTextColor(Color.WHITE)
+                    background = shape(black, Color.WHITE, 10)
+                    minWidth = dp(52)
+                    minHeight = dp(52)
+                    setPadding(dp(8), dp(8), dp(8), dp(8))
+                }
+                add(tile, iconBox, bottom = 12)
+                add(tile, label(entry.second, 14f, Color.WHITE, true), bottom = 4)
+                add(tile, label(
+                    when (entry.second) {
+                        "Dispositivos" -> "Conexão USB"
+                        "Ferramentas" -> "Diagnóstico"
+                        "Meu perfil" -> "Conta e dados"
+                        else -> "Encerrar sessão"
+                    }, 11f, muted
+                ))
+                row.addView(tile, LinearLayout.LayoutParams(0, dp(142), 1f).apply {
+                    if (index == 0) marginEnd = dp(7) else marginStart = dp(7)
+                })
+            }
+            quickGrid.addView(row, LinearLayout.LayoutParams(-1, -2).apply {
+                bottomMargin = dp(14)
+            })
         }
 
-        quickItem("▣", "Dispositivos", "Conexão USB") {
-            showDevices()
-        }
-        quickItem("⌘", "Ferramentas", "Diagnóstico") {
-            showTools()
-        }
-        add(root, quickRow, bottom = 22)
+        quickRow(
+            Triple("▣", "Dispositivos", { showDevices() }),
+            Triple("⌘", "Ferramentas", { showTools() })
+        )
+        quickRow(
+            Triple("◉", "Meu perfil", { showProfile() }),
+            Triple("↪", "Sair da conta", {
+                currentAccount = JSONObject()
+                showLogin()
+            })
+        )
+        add(root, quickGrid, bottom = 8)
 
         add(root, label("DISPOSITIVOS", 12f, muted, true), bottom = 12)
 
