@@ -863,21 +863,21 @@ class MainActivity : Activity() {
                     isClickable = true
                     isFocusable = true
                     setPadding(dp(16), dp(16), dp(12), dp(16))
-                    background = shape(black, Color.WHITE, 14)
+                    background = shape(panel, line, 14)
                     setOnClickListener { entry.third.invoke() }
                 }
                 val iconBox = TextView(this).apply {
                     text = entry.first
                     textSize = 24f
                     gravity = Gravity.CENTER
-                    setTextColor(Color.WHITE)
-                    background = shape(black, Color.WHITE, 10)
+                    setTextColor(silver)
+                    background = shape(panel, line, 10)
                     minWidth = dp(52)
                     minHeight = dp(52)
                     setPadding(dp(8), dp(8), dp(8), dp(8))
                 }
                 add(tile, iconBox, bottom = 12)
-                add(tile, label(entry.second, 14f, Color.WHITE, true), bottom = 4)
+                add(tile, label(entry.second, 14f, silver, true), bottom = 4)
                 add(tile, label(
                     when (entry.second) {
                         "Dispositivos" -> "Conexão USB"
@@ -908,10 +908,6 @@ class MainActivity : Activity() {
         quickRow(
             Triple("☁", "Nuvem Enterex", { showCloudStorage() }),
             Triple("⚙", "Configurações", { showSettings() })
-        )
-        quickRow(
-            Triple("ⓘ", "Sobre o sistema", { showSettings() }),
-            Triple("◌", "Planos", { showPlans() })
         )
         add(root, quickGrid, bottom = 8)
 
