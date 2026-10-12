@@ -1056,15 +1056,52 @@ class MainActivity : Activity() {
         val (scroll, root) = createRoot()
         addHeader(root)
         add(root, label("MEU PERFIL", 22f, silver, true), bottom = 18)
-
         val profile = card()
-        add(profile, label("◉", 42f, silver), bottom = 10)
+        val avatar = ImageView(this).apply {
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            background = shape(Color.rgb(24, 27, 33), line, 48)
+            clipToOutline = true
+            contentDescription = "Foto de perfil"
+        }
+        val photoUri = currentAccount.optString("photoUri", "")
+        if (photoUri.isNotBlank()) {
+            try { avatar.setImageURI(Uri.parse(photoUri)) } catch (_: Exception) {}
+        } else {
+            avatar.setImageDrawable(android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.OVAL
+                setColor(Color.rgb(24, 27, 33))
+                setStroke(dp(1), line)
+            })
+        }
+        profileImage = avatar
+        profile.addView(avatar, LinearLayout.LayoutParams(dp(96), dp(96)).apply { gravity = Gravity.CENTER; bottomMargin = dp(12) })
+        val changePhoto = makeButton("ALTERAR FOTO", false)
+        add(profile, changePhoto, bottom = 16)
+        changePhoto.setOnClickListener {
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                type = "image/*"
+                addCategory(Intent.CATEGORY_OPENABLE)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+            }
+            startActivityForResult(intent, 1001)
+        }
         add(profile, label(currentAccount.optString("nickname", "Usuário"), 20f, silver, true), bottom = 8)
         add(profile, label("Idade: " + currentAccount.optInt("age", 0), 12f, muted), bottom = 8)
         val bio = currentAccount.optString("bio", "").ifBlank { "Nenhuma biografia informada." }
         add(profile, label(bio, 12f, muted))
         add(root, profile, bottom = 18)
-
+        val planCard = card()
+        add(planCard, label("STATUS DO PLANO", 12f, silver, true), bottom = 8)
+        add(planCard, label(currentAccount.optString("plan", "Plano gratuito"), 16f, silver, true), bottom = 5)
+        add(planCard, label("O plano e seus recursos aparecerão aqui quando a ativação estiver integrada.", 11f, muted))
+        add(root, planCard, bottom = 16)
+        val privacy = card()
+        add(privacy, label("CONTA E PRIVACIDADE", 12f, silver, true), bottom = 8)
+        add(privacy, label("Nesta versão, conta e foto ficam salvas localmente neste dispositivo. Sincronização e armazenamento privado na nuvem ainda não estão disponíveis.", 11f, muted), bottom = 12)
+        val logout = makeButton("SAIR DA CONTA", false)
+        add(privacy, logout)
+        logout.setOnClickListener { currentAccount = JSONObject(); showLogin() }
+        add(root, privacy, bottom = 18)
         val back = makeButton("VOLTAR AO PAINEL", true)
         add(root, back)
         back.setOnClickListener { showDashboard() }
