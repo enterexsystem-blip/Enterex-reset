@@ -982,8 +982,9 @@ class MainActivity : Activity() {
         val nav = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
-            background = shape(Color.rgb(18, 20, 24), Color.rgb(70, 76, 86), 18)
-            setPadding(dp(4), dp(8), dp(4), dp(8))
+            background = shape(Color.rgb(16, 18, 22), Color.rgb(65, 73, 84), 22)
+            setPadding(dp(5), dp(6), dp(5), dp(6))
+            elevation = dp(8).toFloat()
         }
         val items = listOf(
             Triple("⌂", "Início", { showDashboard() }),
@@ -992,17 +993,53 @@ class MainActivity : Activity() {
             Triple("⚙", "Ajustes", { showSettings() })
         )
         items.forEach { item ->
-            val button = TextView(this).apply {
-                text = item.first + "\\n" + item.second
-                textSize = 11f
+            val active = item.second == selected
+            val slot = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
                 gravity = Gravity.CENTER
-                setTextColor(if (item.second == selected) Color.WHITE else muted)
-                setPadding(dp(6), dp(4), dp(6), dp(4))
-                setOnClickListener { item.third.invoke() }
+                background = if (active) shape(Color.rgb(43, 48, 57), Color.rgb(125, 137, 154), 16)
+                    else shape(Color.TRANSPARENT, Color.TRANSPARENT, 16)
+                setPadding(dp(3), dp(5), dp(3), dp(4))
+                isClickable = true
+                isFocusable = true
+                contentDescription = item.second
+                setOnClickListener {
+                    animate().cancel()
+                    animate().scaleX(0.96f).scaleY(0.96f).setDuration(70).withEndAction {
+                        animate().scaleX(1f).scaleY(1f).setDuration(140).start()
+                        item.third.invoke()
+                    }.start()
+                }
             }
-            nav.addView(button, LinearLayout.LayoutParams(0, dp(48), 1f))
+            val icon = TextView(this).apply {
+                text = item.first
+                textSize = if (active) 25f else 22f
+                gravity = Gravity.CENTER
+                setTextColor(if (active) Color.WHITE else Color.rgb(132, 141, 154))
+                scaleX = if (active) 1.08f else 1f
+                scaleY = if (active) 1.08f else 1f
+            }
+            val caption = TextView(this).apply {
+                text = item.second
+                textSize = if (active) 10f else 9f
+                gravity = Gravity.CENTER
+                setTextColor(if (active) Color.WHITE else Color.rgb(132, 141, 154))
+                typeface = if (active) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
+                setPadding(0, dp(1), 0, 0)
+            }
+            slot.addView(icon, LinearLayout.LayoutParams(-1, dp(28)))
+            slot.addView(caption, LinearLayout.LayoutParams(-1, dp(17)))
+            nav.addView(slot, LinearLayout.LayoutParams(0, dp(54), 1f).apply {
+                marginStart = dp(2)
+                marginEnd = dp(2)
+            })
+            if (active) {
+                slot.alpha = 0.65f
+                slot.animate().alpha(1f).scaleX(1.04f).scaleY(1.04f)
+                    .setDuration(240).start()
+            }
         }
-        add(root, nav, top = 16)
+        add(root, nav, top = 16, bottom = 8)
     }
 
     private fun showPlans() {
