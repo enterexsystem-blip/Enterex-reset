@@ -387,7 +387,8 @@ class MainActivity : Activity() {
         age: Int,
         bio: String,
         email: String,
-        password: String
+        password: String,
+        photoUri: String = ""
     ): Boolean {
         val key = normalizedEmail(email)
         if (accounts.contains(key)) return false
@@ -402,6 +403,7 @@ class MainActivity : Activity() {
                 put("age", age)
                 put("bio", bio)
                 put("email", key)
+                if (photoUri.isNotBlank()) put("photoUri", photoUri)
                 put("salt", Base64.encodeToString(salt, Base64.NO_WRAP))
                 put("hash", Base64.encodeToString(hash, Base64.NO_WRAP))
             }
@@ -649,14 +651,14 @@ class MainActivity : Activity() {
         add(form, photoButton, bottom = 20)
 
         photoButton.setOnClickListener {
-            val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
                 type = "image/*"
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
             }
             @Suppress("DEPRECATION")
-            startActivityForResult(
-                Intent.createChooser(intent, "Escolha sua foto"),
-                1001
-            )
+            startActivityForResult(intent, 1001)
         }
 
         add(form, label("APELIDO", 10f, muted, true), bottom = 7)
@@ -738,7 +740,8 @@ class MainActivity : Activity() {
                     val progress = showOperationProgress("Criando sua conta…")
                     Thread {
                         val saved = createAccount(
-                            name, parsedAge!!, "", emailText, pass
+                            name, parsedAge!!, "", emailText, pass,
+                            selectedPhoto?.toString().orEmpty()
                         )
                         runOnUiThread {
                             progress.dismiss()
@@ -1348,7 +1351,7 @@ class MainActivity : Activity() {
                     uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
                 )
             } catch (_: Exception) {
-                // Alguns seletores não oferecem permissão persistente.
+                // Se o provedor não oferecer permissão persistente, mantém a seleção da sessão.
             }
             try {
                 profileImage?.setImageURI(uri)
