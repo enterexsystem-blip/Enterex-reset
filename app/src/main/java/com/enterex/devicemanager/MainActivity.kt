@@ -902,49 +902,27 @@ class MainActivity : Activity() {
 
 
     private fun showPlans() {
-        val (scroll, root) = createRoot()
-        addHeader(root)
-        add(root, label("PLANOS ENTEREX", 22f, silver, true), bottom = 8)
-        add(root, label("Escolha o período desejado.", 12f, muted), bottom = 18)
-        listOf(
-            Triple("7 DIAS", "R$ 15,00", "Acesso por 7 dias após confirmação"),
-            Triple("15 DIAS", "R$ 30,00", "Acesso por 15 dias após confirmação"),
-            Triple("1 MÊS", "R$ 50,00", "Acesso por 1 mês após confirmação")
-        ).forEach { plan ->
-            val item = card()
-            add(item, label(plan.first, 12f, muted, true), bottom = 5)
-            add(item, label(plan.second, 24f, Color.WHITE, true), bottom = 5)
-            add(item, label(plan.third, 11f, muted), bottom = 10)
-            val buy = makeButton("INDISPONÍVEL NO MOMENTO", false)
-            add(item, buy)
-            buy.setOnClickListener {
-                AlertDialog.Builder(this)
-                    .setTitle("Compra indisponível")
-                    .setMessage("O pagamento online ainda não foi integrado. Nenhuma cobrança foi realizada e nenhum plano foi ativado. Entre em contato com o suporte.")
-                    .setPositiveButton("ENTENDI", null)
-                    .show()
-            }
-            add(root, item, bottom = 12)
+        val offers = listOf(
+            Triple("ENTEREX ESSENCIAL", "R$ 15,00 • 7 dias", "Acesso temporário às ferramentas compatíveis e orientações para recuperação."),
+            Triple("ENTEREX PLUS", "R$ 30,00 • 15 dias", "Mais tempo para diagnóstico e acompanhamento organizado dos procedimentos."),
+            Triple("ENTEREX PREMIUM", "R$ 50,00 • 1 mês", "Plano pensado para quem busca atendimento prioritário e suporte ampliado.")
+        )
+        val offer = offers[java.security.SecureRandom().nextInt(offers.size)]
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(18), dp(20), dp(16))
+            background = shape(Color.rgb(5, 6, 8), Color.rgb(120, 130, 145), 16)
         }
-        add(root, label("A ativação depende da integração segura de pagamentos e servidor.", 11f, muted), bottom = 18)
-        val back = makeButton("VOLTAR AO PAINEL", true)
-        add(root, back)
-        back.setOnClickListener { showDashboard() }
-        setContentView(scroll)
-    }
-
-    private fun showNotifications() {
-        val (scroll, root) = createRoot()
-        addHeader(root)
-        add(root, label("CENTRAL DE NOTIFICAÇÕES", 20f, silver, true), bottom = 16)
-        val notice = card()
-        add(notice, label("Nenhuma notificação nova", 15f, silver, true), bottom = 8)
-        add(notice, label("Avisos de conta, plano e suporte aparecerão aqui quando os serviços correspondentes estiverem integrados.", 12f, muted))
-        add(root, notice, bottom = 18)
-        val back = makeButton("VOLTAR AO PAINEL", true)
-        add(root, back)
-        back.setOnClickListener { showDashboard() }
-        setContentView(scroll)
+        add(panel, label("ENTEREX  /  PLANOS", 10f, muted, true), bottom = 12)
+        add(panel, label(offer.first, 21f, silver, true), bottom = 8)
+        add(panel, label(offer.second, 25f, Color.WHITE, true), bottom = 14)
+        add(panel, label(offer.third, 13f, silver), bottom = 14)
+        add(panel, label("Armazenamento privado de fotos, contatos, vídeos e músicas, recuperação de arquivos e suporte 24 horas são recursos planejados para planos pagos, mas ainda não estão implementados.", 12f, muted), bottom = 12)
+        add(panel, label("A compra e a ativação online ainda não estão disponíveis. Nenhuma cobrança será feita por esta tela.", 12f, muted), bottom = 14)
+        val dialog = AlertDialog.Builder(this).setView(panel).setNegativeButton("FECHAR", null).create()
+        dialog.show()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.window?.setLayout((resources.displayMetrics.widthPixels * 0.92f).toInt(), android.view.WindowManager.LayoutParams.WRAP_CONTENT)
     }
 
     private fun showDevices() {
