@@ -791,8 +791,6 @@ class MainActivity : Activity() {
 
         add(root, label("PAINEL DE CONTROLE", 10f, muted, true),
             bottom = 8)
-        add(root, label("Olá, $nickname 👋", 27f, silver, true),
-            bottom = 5)
         add(root, label("Gerencie seus dispositivos em um só lugar.",
             13f, muted), bottom = 22)
 
@@ -858,6 +856,7 @@ class MainActivity : Activity() {
                         "Ferramentas" -> "Diagnóstico"
                         "Meu perfil" -> "Conta e dados"
                         "Configurações" -> "Preferências do app"
+                        "Nuvem Enterex" -> "Arquivos privados"
                         else -> "Ajuda e informações"
                     }, 11f, muted
                 ))
@@ -879,8 +878,12 @@ class MainActivity : Activity() {
             Triple("♧", "Notificações", { showNotifications() })
         )
         quickRow(
-            Triple("⚙", "Configurações", { showSettings() }),
-            Triple("ⓘ", "Sobre o sistema", { showSettings() })
+            Triple("☁", "Nuvem Enterex", { showCloudStorage() }),
+            Triple("⚙", "Configurações", { showSettings() })
+        )
+        quickRow(
+            Triple("ⓘ", "Sobre o sistema", { showSettings() }),
+            Triple("◌", "Planos", { showPlans() })
         )
         add(root, quickGrid, bottom = 8)
 
@@ -900,6 +903,107 @@ class MainActivity : Activity() {
         setContentView(scroll)
     }
 
+
+    private fun showNotifications() {
+        val (scroll, root) = createRoot()
+        addHeader(root)
+        add(root, label("NOTIFICAÇÕES", 20f, silver, true), bottom = 8)
+        add(root, label("Avisos e atualizações da sua conta aparecerão aqui.", 13f, muted), bottom = 18)
+        val empty = card()
+        add(empty, label("♧", 34f, silver), bottom = 8)
+        add(empty, label("Tudo tranquilo por aqui", 15f, silver, true), bottom = 5)
+        add(empty, label("Você ainda não tem notificações.", 12f, muted))
+        add(root, empty, bottom = 18)
+        addBottomNavigation(root, "Notificações")
+        setContentView(scroll)
+    }
+
+    private fun showCloudStorage() {
+        val (scroll, root) = createRoot()
+        addHeader(root)
+        add(root, label("NUVEM ENTEREX", 21f, silver, true), bottom = 6)
+        add(root, label("Seus arquivos organizados em um só lugar.", 13f, muted), bottom = 18)
+
+        fun storageTile(icon: String, title: String, detail: String, action: () -> Unit, locked: Boolean = false) {
+            val tile = card()
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+            }
+            add(row, label(icon, 28f, silver, true))
+            val copy = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dp(14), 0, 0, 0)
+            }
+            add(copy, label(title + if (locked) "  🔒" else "", 15f, silver, true))
+            add(copy, label(detail, 11f, muted))
+            row.addView(copy, LinearLayout.LayoutParams(0, -2, 1f))
+            row.addView(makeButton("+", true).apply { setOnClickListener { action() } },
+                LinearLayout.LayoutParams(dp(48), dp(44)))
+            add(tile, row)
+            add(root, tile, bottom = 12)
+        }
+
+        storageTile("▧", "Imagens", "Free: até 500 MB • Pro: ilimitado", { pickCloudFile("image/*", "Imagens") })
+        storageTile("▶", "Vídeos", "Free: até 500 MB • Pro: ilimitado", { pickCloudFile("video/*", "Vídeos") })
+        val premium = currentAccount.optString("plan", "free").equals("premium", true)
+        storageTile("♫", "Músicas", if (premium) "Disponível no Premium" else "Exclusivo Premium", {
+            if (premium) pickCloudFile("audio/*", "Músicas") else showPlans()
+        }, locked = !premium)
+        storageTile("▤", "Anotações", "Disponível nos planos Free e Pro", { showNotes() })
+        add(root, label("Aviso: envio e armazenamento em nuvem ainda dependem do serviço online e não estão ativos nesta versão.", 11f, muted), bottom = 16)
+        addBottomNavigation(root, "Nuvem")
+        setContentView(scroll)
+    }
+
+    private fun pickCloudFile(mimeType: String, category: String) {
+        Toast.makeText(this, "O envio de $category será ativado quando a nuvem estiver disponível.", Toast.LENGTH_LONG).show()
+        // Picker remains disabled until secure cloud upload and quota enforcement are implemented.
+    }
+
+    private fun showNotes() {
+        val input = EditText(this).apply {
+            hint = "Escreva uma anotação"
+            setTextColor(silver)
+            setHintTextColor(muted)
+            background = shape(black, Color.WHITE, 10)
+            setPadding(dp(12), dp(12), dp(12), dp(12))
+            minHeight = dp(120)
+        }
+        AlertDialog.Builder(this).setTitle("Anotações").setView(input)
+            .setPositiveButton("SALVAR") { _, _ ->
+                val notes = getSharedPreferences("enterex_notes", MODE_PRIVATE)
+                notes.edit().putString("note_" + System.currentTimeMillis(), input.text.toString()).apply()
+                Toast.makeText(this, "Anotação salva neste dispositivo.", Toast.LENGTH_SHORT).show()
+            }.setNegativeButton("CANCELAR", null).show()
+    }
+
+    private fun addBottomNavigation(root: LinearLayout, selected: String) {
+        val nav = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            background = shape(Color.rgb(18, 20, 24), Color.rgb(70, 76, 86), 18)
+            setPadding(dp(4), dp(8), dp(4), dp(8))
+        }
+        val items = listOf(
+            Triple("⌂", "Início", { showDashboard() }),
+            Triple("☁", "Nuvem", { showCloudStorage() }),
+            Triple("♧", "Avisos", { showNotifications() }),
+            Triple("⚙", "Ajustes", { showSettings() })
+        )
+        items.forEach { item ->
+            val button = TextView(this).apply {
+                text = item.first + "\\n" + item.second
+                textSize = 11f
+                gravity = Gravity.CENTER
+                setTextColor(if (item.second == selected) Color.WHITE else muted)
+                setPadding(dp(6), dp(4), dp(6), dp(4))
+                setOnClickListener { item.third.invoke() }
+            }
+            nav.addView(button, LinearLayout.LayoutParams(0, dp(48), 1f))
+        }
+        add(root, nav, top = 16)
+    }
 
     private fun showPlans() {
         val offers = listOf(
