@@ -2,6 +2,7 @@
 package com.enterex.devicemanager
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.os.Bundle
 import android.graphics.Color
 import android.graphics.Typeface
@@ -10,9 +11,12 @@ import android.graphics.drawable.GradientDrawable
 import android.content.Intent
 import android.net.Uri
 import android.text.InputType
+import android.text.method.PasswordTransformationMethod
+import android.text.method.HideReturnsTransformationMethod
 import android.view.Gravity
 import android.view.View
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -37,6 +41,10 @@ class MainActivity : Activity() {
 
     private val accounts by lazy {
         getSharedPreferences("enterex_accounts", MODE_PRIVATE)
+    }
+
+    private val authorizations by lazy {
+        getSharedPreferences("enterex_authorizations", MODE_PRIVATE)
     }
 
     private var profileImage: ImageView? = null
@@ -185,6 +193,57 @@ class MainActivity : Activity() {
             background = shape(panel, line, 16)
         }
 
+    private fun addPasswordToggle(parent: LinearLayout, field: EditText, bottom: Int = 8) {
+        val toggle = CheckBox(this).apply {
+            text = "Mostrar senha"
+            textSize = 12f
+            setTextColor(silver)
+            buttonTintList = android.content.res.ColorStateList.valueOf(Color.WHITE)
+            setOnCheckedChangeListener { _, checked ->
+                val cursor = field.selectionStart
+                field.transformationMethod = if (checked) {
+                    HideReturnsTransformationMethod.getInstance()
+                } else {
+                    PasswordTransformationMethod.getInstance()
+                }
+                if (cursor >= 0) field.setSelection(cursor.coerceAtMost(field.text.length))
+            }
+        }
+        add(parent, toggle, bottom = bottom)
+    }
+
+    private fun continueAfterLogin(account: JSONObject) {
+        currentAccount = account
+        val key = normalizedEmail(account.optString("email", ""))
+        if (authorizations.getBoolean("consent_$key", false)) {
+            showDashboard()
+        } else {
+            showAuthorizationNotice(key)
+        }
+    }
+
+    private fun showAuthorizationNotice(accountKey: String) {
+        val message = "Para acessar o painel do Enterex, leia e aceite este aviso.\\n\\n" +
+            "• O aplicativo salvará neste celular a sua aceitação, para não perguntar novamente em cada acesso.\\n\\n" +
+            "• A aceitação permite abrir o painel e usar os recursos que forem implementados e autorizados.\\n\\n" +
+            "• Ela NÃO concede automaticamente permissões do Android, acesso à conta Google, depuração USB ou autorização para apagar outros aparelhos. Esses acessos dependerão das permissões oficiais e da compatibilidade do dispositivo.\\n\\n" +
+            "• A restauração pode apagar dados permanentemente e só deve ser usada em aparelhos próprios ou com autorização do proprietário."
+        AlertDialog.Builder(this)
+            .setTitle("Autorizações e uso do Enterex")
+            .setMessage(message)
+            .setCancelable(false)
+            .setPositiveButton("ACEITAR E CONTINUAR") { _, _ ->
+                authorizations.edit().putBoolean("consent_$accountKey", true).apply()
+                showDashboard()
+            }
+            .setNegativeButton("RECUSAR") { _, _ ->
+                currentAccount = JSONObject()
+                Toast.makeText(this, "É necessário aceitar o aviso para abrir o painel.", Toast.LENGTH_LONG).show()
+                showLogin()
+            }
+            .show()
+    }
+
     private fun normalizedEmail(email: String) =
         email.trim().lowercase(java.util.Locale.ROOT)
 
@@ -285,7 +344,8 @@ class MainActivity : Activity() {
             InputType.TYPE_CLASS_TEXT or
                 InputType.TYPE_TEXT_VARIATION_PASSWORD
         )
-        add(form, password, bottom = 8)
+        add(form, password, bottom = 2)
+        addPasswordToggle(form, password, bottom = 8)
 
         val forgot = label("Esqueceu sua senha?", 11f, silver).apply {
             gravity = Gravity.END
@@ -333,8 +393,7 @@ class MainActivity : Activity() {
                             Toast.LENGTH_LONG
                         ).show()
                     } else {
-                        currentAccount = account
-                        showDashboard()
+                        continueAfterLogin(account)
                     }
                 }
             }
@@ -439,7 +498,8 @@ class MainActivity : Activity() {
             InputType.TYPE_CLASS_TEXT or
                 InputType.TYPE_TEXT_VARIATION_PASSWORD
         )
-        add(form, password, bottom = 14)
+        add(form, password, bottom = 2)
+        addPasswordToggle(form, password, bottom = 12)
 
         add(form, label("CONFIRMAR SENHA", 10f, muted, true), bottom = 7)
         val confirm = inputField(
@@ -447,7 +507,8 @@ class MainActivity : Activity() {
             InputType.TYPE_CLASS_TEXT or
                 InputType.TYPE_TEXT_VARIATION_PASSWORD
         )
-        add(form, confirm, bottom = 20)
+        add(form, confirm, bottom = 2)
+        addPasswordToggle(form, confirm, bottom = 20)
 
         val register = makeButton("CADASTRAR", true)
         add(form, register, bottom = 10)
