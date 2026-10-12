@@ -459,6 +459,27 @@ class MainActivity : Activity() {
         }, 1800L)
     }
 
+    private fun showOperationProgress(message: String): AlertDialog {
+        val progress = android.widget.ProgressBar(this).apply {
+            isIndeterminate = true
+        }
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(24), dp(20), dp(24), dp(20))
+            addView(progress, LinearLayout.LayoutParams(dp(32), dp(32)))
+            addView(label(message, 14f, silver).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(16), 0, 0, 0)
+            }, LinearLayout.LayoutParams(0, dp(48), 1f))
+        }
+        return AlertDialog.Builder(this)
+            .setView(container)
+            .setCancelable(false)
+            .create()
+            .also { it.show() }
+    }
+
     private fun showLogin() {
         val (scroll, root) = createRoot()
         addHeader(root)
@@ -531,15 +552,26 @@ class MainActivity : Activity() {
                     password.requestFocus()
                 }
                 else -> {
-                    val account = checkLogin(emailValue, passwordValue)
-                    if (account == null) {
-                        Toast.makeText(
-                            this, "E-mail ou senha incorretos.",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    } else {
-                        continueAfterLogin(account)
-                    }
+                    enter.isEnabled = false
+                    create.isEnabled = false
+                    val progress = showOperationProgress("Verificando acesso…")
+                    Thread {
+                        val account = checkLogin(emailValue, passwordValue)
+                        runOnUiThread {
+                            progress.dismiss()
+                            enter.isEnabled = true
+                            create.isEnabled = true
+                            if (isFinishing || isDestroyed) return@runOnUiThread
+                            if (account == null) {
+                                Toast.makeText(
+                                    this, "E-mail ou senha incorretos.",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            } else {
+                                continueAfterLogin(account)
+                            }
+                        }
+                    }.start()
                 }
             }
         }
@@ -676,20 +708,31 @@ class MainActivity : Activity() {
                     confirm.requestFocus()
                 }
                 else -> {
-                    val saved = createAccount(
-                        name, parsedAge!!, "", emailText, pass
-                    )
-                    if (saved) {
-                        Toast.makeText(
-                            this,
-                            "Conta criada! Faça login para continuar.",
-                            Toast.LENGTH_LONG
-                        ).show()
-                        showLogin()
-                    } else {
-                        email.error = "Este e-mail já está cadastrado"
-                        email.requestFocus()
-                    }
+                    register.isEnabled = false
+                    back.isEnabled = false
+                    val progress = showOperationProgress("Criando sua conta…")
+                    Thread {
+                        val saved = createAccount(
+                            name, parsedAge!!, "", emailText, pass
+                        )
+                        runOnUiThread {
+                            progress.dismiss()
+                            register.isEnabled = true
+                            back.isEnabled = true
+                            if (isFinishing || isDestroyed) return@runOnUiThread
+                            if (saved) {
+                                Toast.makeText(
+                                    this,
+                                    "Conta criada! Faça login para continuar.",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                showLogin()
+                            } else {
+                                email.error = "Este e-mail já está cadastrado"
+                                email.requestFocus()
+                            }
+                        }
+                    }.start()
                 }
             }
         }
