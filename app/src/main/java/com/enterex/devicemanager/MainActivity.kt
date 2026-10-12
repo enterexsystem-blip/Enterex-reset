@@ -33,6 +33,7 @@ class MainActivity : Activity() {
     private val silver = Color.rgb(225, 229, 235)
     private val muted = Color.rgb(135, 143, 153)
     private val line = Color.rgb(58, 64, 73)
+    private val accent = Color.rgb(180, 190, 205)
 
     private val accounts by lazy {
         getSharedPreferences("enterex_accounts", MODE_PRIVATE)
@@ -40,6 +41,7 @@ class MainActivity : Activity() {
 
     private var profileImage: ImageView? = null
     private var selectedPhoto: Uri? = null
+    private var currentAccount = JSONObject()
 
     private fun dp(value: Int) =
         (value * resources.displayMetrics.density).toInt()
@@ -75,13 +77,23 @@ class MainActivity : Activity() {
         top: Int = 0,
         bottom: Int = 0
     ) {
-        parent.addView(view, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        ).apply {
-            topMargin = dp(top)
-            bottomMargin = dp(bottom)
-        })
+        parent.addView(
+            view,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = dp(top)
+                bottomMargin = dp(bottom)
+            }
+        )
+    }
+
+    private fun space(parent: LinearLayout, height: Int) {
+        parent.addView(
+            View(this),
+            LinearLayout.LayoutParams(1, dp(height))
+        )
     }
 
     private fun createRoot(): Pair<ScrollView, LinearLayout> {
@@ -94,7 +106,7 @@ class MainActivity : Activity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(dp(24), dp(22), dp(24), dp(26))
+            setPadding(dp(22), dp(20), dp(22), dp(20))
             setBackgroundColor(black)
         }
 
@@ -108,57 +120,70 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER_VERTICAL
         }
 
-        val brand = label("ENTEREX", 15f, silver, true).apply {
-            letterSpacing = 0.18f
+        val brand = label("◈ ENTEREX", 17f, silver, true).apply {
             gravity = Gravity.CENTER_VERTICAL
+            letterSpacing = 0.08f
         }
 
-        header.addView(brand, LinearLayout.LayoutParams(0, dp(34), 1f))
-        header.addView(label("DEVICE MANAGER • V1.0", 9f, muted))
-        add(root, header, bottom = 24)
+        header.addView(
+            brand,
+            LinearLayout.LayoutParams(0, dp(38), 1f)
+        )
+        header.addView(label("DEVICE MANAGER", 9f, muted))
+        add(root, header, bottom = 22)
     }
 
     private fun addBrand(root: LinearLayout) {
-        add(root, label("◈", 66f, silver), bottom = 2)
-        add(root, label("ENTEREX", 31f, silver, true), bottom = 3)
-        add(root, label("D E V I C E   M A N A G E R", 10f, muted), bottom = 12)
+        add(root, label("◈", 60f, silver), bottom = 0)
+        add(root, label("ENTEREX", 30f, silver, true), bottom = 3)
+        add(
+            root,
+            label("D E V I C E   M A N A G E R", 10f, muted),
+            bottom = 12
+        )
 
-        root.addView(View(this).apply {
-            setBackgroundColor(line)
-        }, LinearLayout.LayoutParams(dp(76), dp(1)).apply {
-            gravity = Gravity.CENTER
-            bottomMargin = dp(20)
-        })
+        root.addView(
+            View(this).apply { setBackgroundColor(line) },
+            LinearLayout.LayoutParams(dp(76), dp(1)).apply {
+                gravity = Gravity.CENTER
+                bottomMargin = dp(20)
+            }
+        )
     }
 
-    private fun inputField(
-        hintText: String,
-        type: Int
-    ) = EditText(this).apply {
-        hint = hintText
-        textSize = 14f
-        setTextColor(silver)
-        setHintTextColor(muted)
-        inputType = type
-        isSingleLine = true
-        gravity = Gravity.CENTER_VERTICAL
-        setPadding(dp(14), dp(4), dp(14), dp(4))
-        background = shape(black, line, 10)
-        minHeight = dp(52)
-    }
+    private fun inputField(hintText: String, type: Int) =
+        EditText(this).apply {
+            hint = hintText
+            textSize = 14f
+            setTextColor(silver)
+            setHintTextColor(muted)
+            inputType = type
+            isSingleLine = true
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(14), dp(4), dp(14), dp(4))
+            background = shape(black, line, 10)
+            minHeight = dp(52)
+        }
 
     private fun makeButton(textValue: String, filled: Boolean) =
         Button(this).apply {
             text = textValue
             textSize = 13f
             isAllCaps = false
-            letterSpacing = 0.04f
+            letterSpacing = 0.03f
             setTextColor(if (filled) black else silver)
             typeface = Typeface.DEFAULT_BOLD
             background = if (filled) shape(silver, radius = 10)
                 else shape(panel, line, 10)
-            minHeight = dp(50)
+            minHeight = dp(48)
             setPadding(dp(12), 0, dp(12), 0)
+        }
+
+    private fun card(): LinearLayout =
+        LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(16), dp(16), dp(16))
+            background = shape(panel, line, 16)
         }
 
     private fun normalizedEmail(email: String) =
@@ -182,7 +207,6 @@ class MainActivity : Activity() {
         password: String
     ): Boolean {
         val key = normalizedEmail(email)
-
         if (accounts.contains(key)) return false
 
         return try {
@@ -194,6 +218,7 @@ class MainActivity : Activity() {
                 put("nickname", nickname)
                 put("age", age)
                 put("bio", bio)
+                put("email", key)
                 put("salt", Base64.encodeToString(salt, Base64.NO_WRAP))
                 put("hash", Base64.encodeToString(hash, Base64.NO_WRAP))
             }
@@ -208,9 +233,14 @@ class MainActivity : Activity() {
         return try {
             val saved = accounts.getString(normalizedEmail(email), null)
                 ?: return null
+
             val account = JSONObject(saved)
-            val salt = Base64.decode(account.getString("salt"), Base64.NO_WRAP)
-            val expected = Base64.decode(account.getString("hash"), Base64.NO_WRAP)
+            val salt = Base64.decode(
+                account.getString("salt"), Base64.NO_WRAP
+            )
+            val expected = Base64.decode(
+                account.getString("hash"), Base64.NO_WRAP
+            )
             val actual = hashPassword(password, salt)
 
             if (MessageDigest.isEqual(expected, actual)) account else null
@@ -231,62 +261,54 @@ class MainActivity : Activity() {
         addHeader(root)
         addBrand(root)
 
-        add(root, label("CONTROLE. SEGURANÇA.\nSEMPRE COM VOCÊ.", 11f), bottom = 24)
+        add(
+            root,
+            label("CONTROLE. SEGURANÇA.\nSEMPRE COM VOCÊ.", 11f),
+            bottom = 24
+        )
 
-        val card = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(18), dp(20), dp(18), dp(20))
-            background = shape(panel, line, 14)
-        }
-        add(root, card, bottom = 20)
+        val form = card()
+        add(root, form, bottom = 20)
 
-        add(card, label("ACESSO AO SISTEMA", 13f, silver, true), bottom = 6)
-        add(card, label("Entre com sua conta para continuar.", 11f, muted), bottom = 20)
+        add(form, label("ACESSO AO SISTEMA", 13f, silver, true), bottom = 6)
+        add(form, label("Entre com sua conta para continuar.", 11f, muted),
+            bottom = 20)
 
         val email = inputField(
             "E-mail",
-            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+            InputType.TYPE_CLASS_TEXT or
+                InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
         )
-        add(card, email, bottom = 12)
+        add(form, email, bottom = 12)
 
         val password = inputField(
             "Senha",
-            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            InputType.TYPE_CLASS_TEXT or
+                InputType.TYPE_TEXT_VARIATION_PASSWORD
         )
-        add(card, password, bottom = 8)
+        add(form, password, bottom = 8)
 
         val forgot = label("Esqueceu sua senha?", 11f, silver).apply {
             gravity = Gravity.END
             setPadding(0, dp(8), 0, dp(16))
         }
-        add(card, forgot)
+        add(form, forgot)
 
         val enter = makeButton("ENTRAR", true)
-        add(card, enter, bottom = 10)
+        add(form, enter, bottom = 10)
 
         val create = makeButton("CRIAR CONTA", false)
-        add(card, create)
+        add(form, create)
 
         add(root, label("TECNOLOGIA AO SEU ALCANCE", 9f, muted, true),
             top = 10, bottom = 16)
 
-        val footer = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER
-        }
-
-        listOf("⌘" to "Dispositivos", "◇" to "Restauração", "◎" to "Controle")
-            .forEach { item ->
-                val column = LinearLayout(this).apply {
-                    orientation = LinearLayout.VERTICAL
-                    gravity = Gravity.CENTER
-                }
-                add(column, label(item.first, 23f, silver))
-                add(column, label(item.second, 9f, muted))
-                footer.addView(column, LinearLayout.LayoutParams(0, dp(58), 1f))
-            }
-
-        add(root, footer, bottom = 18)
+        add(
+            root,
+            label("⌘  Dispositivos       ◇  Restauração       ◎  Controle",
+                10f, silver),
+            bottom = 20
+        )
         add(root, label("ENTEREX SYSTEMS", 8f, muted))
 
         create.setOnClickListener { showRegistration() }
@@ -308,16 +330,12 @@ class MainActivity : Activity() {
                     val account = checkLogin(emailValue, passwordValue)
                     if (account == null) {
                         Toast.makeText(
-                            this,
-                            "E-mail ou senha incorretos.",
+                            this, "E-mail ou senha incorretos.",
                             Toast.LENGTH_LONG
                         ).show()
                     } else {
-                        Toast.makeText(
-                            this,
-                            "Bem-vindo, ${account.optString("nickname")}!",
-                            Toast.LENGTH_LONG
-                        ).show()
+                        currentAccount = account
+                        showDashboard()
                     }
                 }
             }
@@ -342,16 +360,14 @@ class MainActivity : Activity() {
         addHeader(root)
         addBrand(root)
         add(root, label("CRIE SUA CONTA", 20f, silver, true), bottom = 6)
-        add(root, label("Faça parte do sistema ENTEREX.", 12f, muted), bottom = 22)
+        add(root, label("Faça parte do sistema ENTEREX.", 12f, muted),
+            bottom = 22)
 
-        val card = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(18), dp(20), dp(18), dp(20))
-            background = shape(panel, line, 14)
-        }
-        add(root, card, bottom = 18)
-        add(card, label("DADOS DO USUÁRIO", 12f, silver, true), bottom = 16)
-        add(card, label("FOTO DE PERFIL", 10f, muted, true), bottom = 10)
+        val form = card()
+        add(root, form, bottom = 18)
+
+        add(form, label("DADOS DO USUÁRIO", 12f, silver, true), bottom = 16)
+        add(form, label("FOTO DE PERFIL", 10f, muted, true), bottom = 10)
 
         val avatar = ImageView(this).apply {
             setImageDrawable(shape(black, line, 60))
@@ -361,13 +377,16 @@ class MainActivity : Activity() {
         }
         profileImage = avatar
 
-        card.addView(avatar, LinearLayout.LayoutParams(dp(92), dp(92)).apply {
-            gravity = Gravity.CENTER
-            bottomMargin = dp(12)
-        })
+        form.addView(
+            avatar,
+            LinearLayout.LayoutParams(dp(92), dp(92)).apply {
+                gravity = Gravity.CENTER
+                bottomMargin = dp(12)
+            }
+        )
 
         val photoButton = makeButton("ADICIONAR FOTO (OPCIONAL)", false)
-        add(card, photoButton, bottom = 20)
+        add(form, photoButton, bottom = 20)
 
         photoButton.setOnClickListener {
             val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
@@ -375,23 +394,23 @@ class MainActivity : Activity() {
             }
             @Suppress("DEPRECATION")
             startActivityForResult(
-                Intent.createChooser(intent, "Escolha sua foto de perfil"),
+                Intent.createChooser(intent, "Escolha sua foto"),
                 1001
             )
         }
 
-        add(card, label("APELIDO", 10f, muted, true), bottom = 7)
+        add(form, label("APELIDO", 10f, muted, true), bottom = 7)
         val nickname = inputField(
             "Como quer ser chamado?",
             InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_WORDS
         )
-        add(card, nickname, bottom = 14)
+        add(form, nickname, bottom = 14)
 
-        add(card, label("IDADE", 10f, muted, true), bottom = 7)
+        add(form, label("IDADE", 10f, muted, true), bottom = 7)
         val age = inputField("Sua idade", InputType.TYPE_CLASS_NUMBER)
-        add(card, age, bottom = 14)
+        add(form, age, bottom = 14)
 
-        add(card, label("BIOGRAFIA (OPCIONAL)", 10f, muted, true), bottom = 7)
+        add(form, label("BIOGRAFIA (OPCIONAL)", 10f, muted, true), bottom = 7)
         val bio = EditText(this).apply {
             hint = "Conte um pouco sobre você..."
             textSize = 14f
@@ -405,132 +424,194 @@ class MainActivity : Activity() {
             setPadding(dp(14), dp(12), dp(14), dp(12))
             background = shape(black, line, 10)
         }
-        add(card, bio, bottom = 14)
+        add(form, bio, bottom = 14)
 
-        add(card, label("E-MAIL", 10f, muted, true), bottom = 7)
+        add(form, label("E-MAIL", 10f, muted, true), bottom = 7)
         val email = inputField(
             "Digite seu e-mail",
-            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+            InputType.TYPE_CLASS_TEXT or
+                InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
         )
-        add(card, email, bottom = 14)
+        add(form, email, bottom = 14)
 
-        add(card, label("SENHA", 10f, muted, true), bottom = 7)
+        add(form, label("SENHA", 10f, muted, true), bottom = 7)
         val password = inputField(
             "Crie uma senha",
-            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            InputType.TYPE_CLASS_TEXT or
+                InputType.TYPE_TEXT_VARIATION_PASSWORD
         )
-        add(card, password, bottom = 14)
+        add(form, password, bottom = 14)
 
-        add(card, label("CONFIRMAR SENHA", 10f, muted, true), bottom = 7)
-        val confirmPassword = inputField(
+        add(form, label("CONFIRMAR SENHA", 10f, muted, true), bottom = 7)
+        val confirm = inputField(
             "Digite a senha novamente",
-            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            InputType.TYPE_CLASS_TEXT or
+                InputType.TYPE_TEXT_VARIATION_PASSWORD
         )
-        add(card, confirmPassword, bottom = 20)
+        add(form, confirm, bottom = 20)
 
-        val registerButton = makeButton("CADASTRAR", true)
-        add(card, registerButton, bottom = 10)
+        val register = makeButton("CADASTRAR", true)
+        add(form, register, bottom = 10)
 
-        val backButton = makeButton("JÁ TENHO UMA CONTA — FAZER LOGIN", false)
-        add(card, backButton)
+        val back = makeButton("JÁ TENHO CONTA — FAZER LOGIN", false)
+        add(form, back)
 
-        registerButton.setOnClickListener {
-            val nameValue = nickname.text.toString().trim()
-            val ageValue = age.text.toString().trim()
-            val bioValue = bio.text.toString().trim()
-            val emailValue = email.text.toString().trim()
-            val passwordValue = password.text.toString()
-            val confirmValue = confirmPassword.text.toString()
+        register.setOnClickListener {
+            val name = nickname.text.toString().trim()
+            val ageText = age.text.toString().trim()
+            val bioText = bio.text.toString().trim()
+            val emailText = email.text.toString().trim()
+            val pass = password.text.toString()
+            val confirmText = confirm.text.toString()
 
             when {
-                nameValue.isEmpty() -> {
+                name.isEmpty() -> {
                     nickname.error = "Digite seu apelido"
                     nickname.requestFocus()
                 }
-                ageValue.isEmpty() -> {
-                    age.error = "Digite sua idade"
-                    age.requestFocus()
-                }
-                ageValue.toIntOrNull() == null || ageValue.toInt() !in 1..120 -> {
+                ageText.toIntOrNull() !in 1..120 -> {
                     age.error = "Digite uma idade válida"
                     age.requestFocus()
                 }
-                !android.util.Patterns.EMAIL_ADDRESS.matcher(emailValue).matches() -> {
+                !android.util.Patterns.EMAIL_ADDRESS
+                    .matcher(emailText).matches() -> {
                     email.error = "Digite um e-mail válido"
                     email.requestFocus()
                 }
-                passwordValue.length < 8 -> {
+                pass.length < 8 -> {
                     password.error = "Use pelo menos 8 caracteres"
                     password.requestFocus()
                 }
-                passwordValue != confirmValue -> {
-                    confirmPassword.error = "As senhas não são iguais"
-                    confirmPassword.requestFocus()
+                pass != confirmText -> {
+                    confirm.error = "As senhas não são iguais"
+                    confirm.requestFocus()
                 }
                 else -> {
-                    try {
-                        val saved = createAccount(
-                            nameValue,
-                            ageValue.toInt(),
-                            bioValue,
-                            emailValue,
-                            passwordValue
-                        )
-
-                        if (saved) {
-                            Toast.makeText(
-                                this,
-                                "Conta criada! Faça login para continuar.",
-                                Toast.LENGTH_LONG
-                            ).show()
-                            showLogin()
-                        } else {
-                            email.error = "Este e-mail já está cadastrado"
-                            email.requestFocus()
-                        }
-                    } catch (e: Exception) {
+                    val saved = createAccount(
+                        name, ageText.toInt(), bioText, emailText, pass
+                    )
+                    if (saved) {
                         Toast.makeText(
                             this,
-                            "Não foi possível criar a conta.",
+                            "Conta criada! Faça login para continuar.",
                             Toast.LENGTH_LONG
                         ).show()
+                        showLogin()
+                    } else {
+                        email.error = "Este e-mail já está cadastrado"
+                        email.requestFocus()
                     }
                 }
             }
         }
 
-        backButton.setOnClickListener { showLogin() }
-
+        back.setOnClickListener { showLogin() }
         add(root, label("ENTEREX SYSTEMS", 8f, muted), bottom = 8)
         setContentView(scroll)
     }
 
-    @Deprecated("Usado para selecionar a foto de perfil")
-    override fun onActivityResult(
-        requestCode: Int,
-        resultCode: Int,
-        data: Intent?
-    ) {
-        super.onActivityResult(requestCode, resultCode, data)
+    // PAINEL PRINCIPAL
 
-        if (requestCode == 1001 && resultCode == RESULT_OK) {
-            val uri = data?.data ?: return
+    private fun showDashboard() {
+        val (scroll, root) = createRoot()
+        root.setPadding(dp(18), dp(18), dp(18), dp(14))
 
-            try {
-                contentResolver.openInputStream(uri)?.use { stream ->
-                    val bitmap = BitmapFactory.decodeStream(stream)
-                    if (bitmap != null) {
-                        profileImage?.setImageBitmap(bitmap)
-                        selectedPhoto = uri
-                    }
-                }
-            } catch (e: Exception) {
-                Toast.makeText(
-                    this,
-                    "Não foi possível abrir essa imagem.",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
+        val nickname = currentAccount.optString("nickname", "Usuário")
+            .ifBlank { "Usuário" }
+
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
         }
-    }
-}
+
+        val brand = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        add(brand, label("◈ ENTEREX", 21f, silver, true))
+        add(brand, label("DEVICE MANAGER", 9f, muted))
+        header.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
+
+        val profile = TextView(this).apply {
+            text = "◉"
+            textSize = 25f
+            setTextColor(silver)
+            setPadding(dp(12), dp(8), dp(4), dp(8))
+            setOnClickListener { showProfile() }
+        }
+        header.addView(profile)
+        add(root, header, bottom = 28)
+
+        add(root, label("PAINEL DE CONTROLE", 10f, muted, true),
+            bottom = 8)
+        add(root, label("Olá, $nickname 👋", 27f, silver, true),
+            bottom = 5)
+        add(root, label("Gerencie seus dispositivos em um só lugar.",
+            13f, muted), bottom = 22)
+
+        val status = card()
+        add(status, label("STATUS DO SISTEMA", 10f, muted, true),
+            bottom = 12)
+
+        val statusRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val dot = TextView(this).apply {
+            text = "●"
+            textSize = 16f
+            setTextColor(accent)
+        }
+        statusRow.addView(dot)
+        val statusText = label("  Aguardando dispositivo", 15f, silver, true)
+        statusText.gravity = Gravity.CENTER_VERTICAL
+        statusRow.addView(statusText)
+        add(status, statusRow, bottom = 8)
+        add(status, label(
+            "Nenhum aparelho USB foi identificado.",
+            12f, muted
+        ).apply { gravity = Gravity.START })
+        add(root, status, bottom = 22)
+
+        add(root, label("ACESSO RÁPIDO", 12f, muted, true), bottom = 12)
+
+        val quickRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+        }
+
+        fun quickItem(
+            symbol: String,
+            title: String,
+            subtitle: String,
+            action: () -> Unit
+        ) {
+            val item = card()
+            add(item, label(symbol, 27f, silver, true), bottom = 10)
+            add(item, label(title, 14f, silver, true), bottom = 5)
+            add(item, label(subtitle, 11f, muted))
+            item.setOnClickListener { action() }
+
+            quickRow.addView(
+                item,
+                LinearLayout.LayoutParams(0, -2, 1f).apply {
+                    marginEnd = dp(6)
+                }
+            )
+        }
+
+        quickItem("▣", "Dispositivos", "Conexão USB") {
+            showDevices()
+        }
+        quickItem("⌘", "Ferramentas", "Diagnóstico") {
+            showTools()
+        }
+        add(root, quickRow, bottom = 22)
+
+        add(root, label("DISPOSITIVOS", 12f, muted, true), bottom = 12)
+
+        val empty = card()
+        add(empty, label("▱", 36f, silver), bottom = 8)
+        add(empty, label("Nenhum dispositivo conectado", 15f, silver, true),
+            bottom = 6)
+        add(empty, label(
+            "Os aparelhos identificados aparecerão nesta área.",
+  
