@@ -614,7 +614,6 @@ class MainActivity : Activity() {
             bottom = 6)
         add(empty, label(
             "Os aparelhos identificados aparecerão nesta área.",
-  
             12f, muted
         ).apply { gravity = Gravity.CENTER })
         add(root, empty, bottom = 22)
