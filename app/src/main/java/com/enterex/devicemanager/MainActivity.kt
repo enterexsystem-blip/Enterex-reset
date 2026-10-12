@@ -225,69 +225,119 @@ class MainActivity : Activity() {
     }
 
     private fun showAuthorizationNotice(accountKey: String) {
+        val black = Color.rgb(5, 6, 8)
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(18), dp(20), dp(16))
+            setBackgroundColor(black)
+        }
+
+        val heading = TextView(this).apply {
+            text = "ENTEREX  /  TERMO DE AUTORIZAÇÃO"
+            textSize = 17f
+            setTextColor(silver)
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, dp(8))
+        }
+        panel.addView(heading)
+
+        val subtitle = TextView(this).apply {
+            text = "Leia até o final e escolha uma opção para continuar."
+            textSize = 12f
+            setTextColor(muted)
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, dp(14))
+        }
+        panel.addView(subtitle)
+
         val message = """
             TERMO DE CIÊNCIA, AUTORIZAÇÃO E RESPONSABILIDADE — ENTEREX
 
-            1. DISPOSIÇÕES GERAIS. O acesso ao painel do aplicativo Enterex está condicionado à leitura e à manifestação expressa de concordância com este termo.
+            1. DISPOSIÇÕES GERAIS
+            O acesso ao painel do aplicativo Enterex depende da leitura e da manifestação expressa de concordância com este termo.
 
-            2. REGISTRO DA ESCOLHA. A opção selecionada será armazenada localmente neste dispositivo, associada à conta utilizada, para evitar a exibição repetida deste aviso enquanto o respectivo registro permanecer disponível no aplicativo.
+            2. REGISTRO DA ESCOLHA
+            A opção selecionada será armazenada localmente neste dispositivo, associada à conta utilizada, para evitar a exibição repetida deste aviso enquanto o registro permanecer disponível.
 
-            3. LIMITES DA AUTORIZAÇÃO. A concordância limita-se ao registro de ciência deste termo e à liberação de acesso ao painel. Não constitui, por si só, concessão de permissões do sistema Android, autorização de depuração USB, acesso à conta Google, vínculo com serviços de terceiros ou autorização técnica para controlar, restaurar ou apagar qualquer dispositivo.
+            3. LIMITES DA AUTORIZAÇÃO
+            A concordância registra ciência deste termo e libera o acesso ao painel. Não concede, por si só, permissões do Android, autorização de depuração USB, acesso à conta Google, vínculo com serviços de terceiros nem autorização técnica para controlar, restaurar ou apagar dispositivos.
 
-            4. PERMISSÕES E COMPATIBILIDADE. Cada recurso dependerá de implementação efetiva, compatibilidade técnica, permissões específicas exigidas pelo sistema operacional e, quando aplicável, dos procedimentos oficiais do fabricante ou prestador do serviço. Este termo não substitui essas etapas.
+            4. PERMISSÕES E COMPATIBILIDADE
+            Cada recurso depende de implementação efetiva, compatibilidade técnica, permissões específicas do sistema e, quando aplicável, dos procedimentos oficiais do fabricante. Este termo não substitui essas etapas.
 
-            5. RISCO DE PERDA DE DADOS. Procedimentos de restauração ou apagamento, quando futuramente disponíveis e devidamente autorizados, poderão eliminar dados de forma permanente. Tais procedimentos deverão ser realizados exclusivamente em dispositivos de propriedade do usuário ou mediante autorização legítima do respectivo proprietário.
+            5. RISCO DE PERDA DE DADOS
+            Procedimentos de restauração ou apagamento, quando disponíveis e devidamente autorizados, podem eliminar dados permanentemente. Devem ser realizados somente em dispositivos próprios ou com autorização legítima do proprietário.
 
-            6. MANIFESTAÇÃO DE VONTADE. A seleção de “Aceitar” indica ciência e concordância com as condições acima. A seleção de “Recusar” impede o acesso ao painel neste momento. A escolha poderá ser alterada apenas mediante os meios disponibilizados pelo aplicativo.
+            6. MANIFESTAÇÃO DE VONTADE
+            Ao aceitar, você confirma que leu e compreendeu as condições acima. Ao recusar, o acesso ao painel será bloqueado e você retornará à tela de acesso.
 
-            Ao prosseguir, confirme uma das opções abaixo.
+            Role esta mensagem até o final antes de escolher.
         """.trimIndent()
 
-        val options = arrayOf(
-            "ACEITO os termos acima e desejo continuar para o painel.",
-            "RECUSO os termos e desejo retornar à tela de acesso."
-        )
-        var selectedOption = -1
+        val body = TextView(this).apply {
+            text = message
+            textSize = 13f
+            setTextColor(silver)
+            setLineSpacing(dp(4).toFloat(), 1.05f)
+            setPadding(dp(14), dp(14), dp(14), dp(14))
+            background = shape(Color.rgb(13, 15, 19), line, 12)
+        }
+        val termsScroll = ScrollView(this).apply {
+            isFillViewport = false
+            overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
+            addView(body, ScrollView.LayoutParams(
+                ScrollView.LayoutParams.MATCH_PARENT,
+                ScrollView.LayoutParams.WRAP_CONTENT
+            ))
+        }
+        panel.addView(termsScroll, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, dp(330)
+        ))
+
+        val accept = makeButton("ACEITAR E CONTINUAR", true)
+        val decline = makeButton("RECUSAR E SAIR", false)
+        val buttons = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, dp(14), 0, 0)
+        }
+        buttons.addView(accept, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, dp(48)
+        ))
+        buttons.addView(decline, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, dp(46)
+        ).apply { topMargin = dp(8) })
+        panel.addView(buttons)
 
         val dialog = AlertDialog.Builder(this)
-            .setTitle("TERMO DE CIÊNCIA E AUTORIZAÇÃO")
-            .setMessage(message)
-            .setSingleChoiceItems(options, -1) { _, which ->
-                selectedOption = which
-            }
-            .setPositiveButton("CONFIRMAR ESCOLHA", null)
+            .setView(panel)
             .setCancelable(false)
             .create()
 
+        accept.setOnClickListener {
+            authorizations.edit().putBoolean("consent_$accountKey", true).apply()
+            dialog.dismiss()
+            showCreatorIntro()
+        }
+        decline.setOnClickListener {
+            currentAccount = JSONObject()
+            dialog.dismiss()
+            Toast.makeText(
+                this,
+                "Você recusou o termo. O painel continuará bloqueado.",
+                Toast.LENGTH_LONG
+            ).show()
+            showLogin()
+        }
         dialog.setOnShowListener {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                when (selectedOption) {
-                    0 -> {
-                        authorizations.edit()
-                            .putBoolean("consent_$accountKey", true)
-                            .apply()
-                        dialog.dismiss()
-                        showCreatorIntro()
-                    }
-                    1 -> {
-                        currentAccount = JSONObject()
-                        dialog.dismiss()
-                        Toast.makeText(
-                            this,
-                            "A opção foi recusada. O painel permanecerá bloqueado.",
-                            Toast.LENGTH_LONG
-                        ).show()
-                        showLogin()
-                    }
-                    else -> Toast.makeText(
-                        this,
-                        "Marque uma das opções antes de confirmar.",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
+            dialog.window?.setBackgroundDrawableResource(android.R.color.black)
         }
         dialog.show()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.black)
+        dialog.window?.setLayout(
+            (resources.displayMetrics.widthPixels * 0.94f).toInt(),
+            android.view.WindowManager.LayoutParams.WRAP_CONTENT
+        )
     }
 
     private fun showCreatorIntro() {
