@@ -740,7 +740,8 @@ class MainActivity : Activity() {
                         "Dispositivos" -> "Conexão USB"
                         "Ferramentas" -> "Diagnóstico"
                         "Meu perfil" -> "Conta e dados"
-                        else -> "Encerrar sessão"
+                        "Configurações" -> "Preferências do app"
+                        else -> "Ajuda e informações"
                     }, 11f, muted
                 ))
                 row.addView(tile, LinearLayout.LayoutParams(0, dp(142), 1f).apply {
@@ -762,6 +763,10 @@ class MainActivity : Activity() {
                 currentAccount = JSONObject()
                 showLogin()
             })
+        )
+        quickRow(
+            Triple("⚙", "Configurações", { showSettings() }),
+            Triple("ⓘ", "Sobre o sistema", { showSettings() })
         )
         add(root, quickGrid, bottom = 8)
 
@@ -829,6 +834,50 @@ class MainActivity : Activity() {
         val back = makeButton("VOLTAR AO PAINEL", true)
         add(root, back)
         back.setOnClickListener { showDashboard() }
+        setContentView(scroll)
+    }
+
+    private fun showSettings() {
+        val (scroll, root) = createRoot()
+        root.setPadding(dp(18), dp(18), dp(18), dp(18))
+        addHeader(root)
+        add(root, label("⚙", 42f, silver, true), bottom = 6)
+        add(root, label("CONFIGURAÇÕES", 22f, silver, true), bottom = 6)
+        add(root, label("Personalize sua experiência no Enterex.", 12f, muted), bottom = 22)
+
+        val appearance = card()
+        add(appearance, label("APARÊNCIA", 12f, silver, true), bottom = 8)
+        add(appearance, label("Tema escuro", 15f, silver, true), bottom = 4)
+        add(appearance, label("O Enterex mantém a identidade preta e prateada nesta versão.", 12f, muted))
+        add(root, appearance, bottom = 14)
+
+        val privacy = card()
+        add(privacy, label("PRIVACIDADE E AUTORIZAÇÃO", 12f, silver, true), bottom = 8)
+        add(privacy, label("Termo de ciência", 15f, silver, true), bottom = 4)
+        add(privacy, label("Revise sua escolha registrada localmente neste dispositivo.", 12f, muted), bottom = 12)
+        val reviewTerms = makeButton("REVISAR TERMO", false)
+        add(privacy, reviewTerms)
+        reviewTerms.setOnClickListener {
+            val key = normalizedEmail(currentAccount.optString("email", ""))
+            if (key.isBlank()) {
+                Toast.makeText(this, "Entre na sua conta para revisar o termo.", Toast.LENGTH_SHORT).show()
+            } else {
+                authorizations.edit().remove("consent_$key").apply()
+                showAuthorizationNotice(key)
+            }
+        }
+        add(root, privacy, bottom = 14)
+
+        val system = card()
+        add(system, label("SISTEMA", 12f, silver, true), bottom = 8)
+        add(system, label("ENTEREX DEVICE MANAGER", 14f, silver, true), bottom = 4)
+        add(system, label("Ferramentas USB/ADB e restauração ainda não estão implementadas nesta versão.", 12f, muted))
+        add(root, system, bottom = 20)
+
+        val back = makeButton("VOLTAR AO PAINEL", true)
+        add(root, back)
+        back.setOnClickListener { showDashboard() }
+        add(root, label("ENTEREX SYSTEMS • KYODAI 4CHAN", 8f, muted), top = 18)
         setContentView(scroll)
     }
 
