@@ -432,6 +432,24 @@ class MainActivity : Activity() {
         }
     }
 
+    private val screenHistory = java.util.ArrayDeque<() -> Unit>()
+    private var handlingBack = false
+
+    private fun navigateTo(screen: () -> Unit) {
+        if (!handlingBack) screenHistory.addLast(screen)
+        screen()
+    }
+
+    @Suppress("DEPRECATION")
+    override fun onBackPressed() {
+        if (screenHistory.isNotEmpty()) {
+            handlingBack = true
+            try { screenHistory.removeLast().invoke() } finally { handlingBack = false }
+        } else {
+            super.onBackPressed()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         darkMode = getSharedPreferences("enterex_settings", MODE_PRIVATE)
@@ -449,13 +467,16 @@ class MainActivity : Activity() {
             letterSpacing = 0.16f
             alpha = 0f
         }
+        val subtitle = label("DEVICE MANAGEMENT", 10f, muted, true).apply { alpha = 0f }
         add(root, title, bottom = 8)
-        add(root, label("DEVICE MANAGEMENT", 10f, muted, true))
+        add(root, subtitle)
         setContentView(scroll)
         title.animate().alpha(1f).setDuration(450L).start()
+        subtitle.animate().alpha(1f).setDuration(450L).start()
         Handler(Looper.getMainLooper()).postDelayed({
             if (!isFinishing && !isDestroyed) {
-                title.animate().alpha(0f).setDuration(450L).withEndAction {
+                title.animate().alpha(0f).setDuration(450L).start()
+                subtitle.animate().alpha(0f).setDuration(450L).withEndAction {
                     if (!isFinishing && !isDestroyed) showLogin()
                 }.start()
             }
@@ -465,6 +486,7 @@ class MainActivity : Activity() {
     private fun showOperationProgress(message: String): AlertDialog {
         val progress = android.widget.ProgressBar(this).apply {
             isIndeterminate = true
+            indeterminateTintList = android.content.res.ColorStateList.valueOf(accent)
         }
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
