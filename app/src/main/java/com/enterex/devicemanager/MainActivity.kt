@@ -796,8 +796,8 @@ class MainActivity : Activity() {
             text = "♧"
             textSize = 25f
             gravity = Gravity.CENTER
-            setTextColor(Color.WHITE)
-            background = shape(Color.rgb(24, 27, 33), Color.rgb(115, 125, 140), 12)
+            setTextColor(silver)
+            background = shape(panel, line, 12)
             contentDescription = "Notificações"
             setOnClickListener { showNotifications() }
         }
@@ -808,8 +808,8 @@ class MainActivity : Activity() {
             text = "♙"
             textSize = 25f
             gravity = Gravity.CENTER
-            setTextColor(Color.WHITE)
-            background = shape(Color.rgb(24, 27, 33), Color.rgb(115, 125, 140), 22)
+            setTextColor(silver)
+            background = shape(panel, line, 22)
             contentDescription = "Meu perfil"
             setOnClickListener { showProfile() }
         }
@@ -928,6 +928,7 @@ class MainActivity : Activity() {
         add(root, empty, bottom = 22)
 
         add(root, label("ENTEREX SYSTEMS", 8f, muted), top = 10)
+        addBottomNavigation(root, "Início")
         setContentView(scroll)
     }
 
@@ -1052,7 +1053,7 @@ class MainActivity : Activity() {
         }
         val items = listOf(
             Triple("⌂", "Início", { showDashboard() }),
-            Triple("☁", "Nuvem", { showCloudStorage() }),
+            Triple("▣", "Dispositivos", { showDevices() }),
             Triple("♧", "Avisos", { showNotifications() }),
             Triple("⚙", "Ajustes", { showSettings() })
         )
