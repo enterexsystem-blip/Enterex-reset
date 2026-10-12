@@ -181,9 +181,13 @@ class MainActivity : Activity() {
             textSize = 13f
             isAllCaps = false
             letterSpacing = 0.03f
-            setTextColor(Color.WHITE)
+            setTextColor(if (filled) black else Color.WHITE)
             typeface = Typeface.DEFAULT_BOLD
-            background = shape(black, Color.WHITE, 10)
+            background = if (filled) {
+                shape(silver, Color.WHITE, 10)
+            } else {
+                shape(black, Color.WHITE, 10)
+            }
             minHeight = dp(48)
             setPadding(dp(12), 0, dp(12), 0)
         }
@@ -585,24 +589,8 @@ class MainActivity : Activity() {
         add(form, nickname, bottom = 14)
 
         add(form, label("IDADE", 10f, muted, true), bottom = 7)
-        val age = inputField("Sua idade", InputType.TYPE_CLASS_NUMBER)
+        val age = inputField("Idade em anos", InputType.TYPE_CLASS_NUMBER)
         add(form, age, bottom = 14)
-
-        add(form, label("BIOGRAFIA (OPCIONAL)", 10f, muted, true), bottom = 7)
-        val bio = EditText(this).apply {
-            hint = "Conte um pouco sobre você..."
-            textSize = 14f
-            setTextColor(silver)
-            setHintTextColor(muted)
-            inputType = InputType.TYPE_CLASS_TEXT or
-                InputType.TYPE_TEXT_FLAG_CAP_SENTENCES or
-                InputType.TYPE_TEXT_FLAG_MULTI_LINE
-            gravity = Gravity.TOP or Gravity.START
-            minHeight = dp(90)
-            setPadding(dp(14), dp(12), dp(14), dp(12))
-            background = shape(black, line, 10)
-        }
-        add(form, bio, bottom = 14)
 
         add(form, label("E-MAIL", 10f, muted, true), bottom = 7)
         val email = inputField(
@@ -639,7 +627,6 @@ class MainActivity : Activity() {
         register.setOnClickListener {
             val name = nickname.text.toString().trim()
             val ageText = age.text.toString().trim()
-            val bioText = bio.text.toString().trim()
             val emailText = email.text.toString().trim()
             val pass = password.text.toString()
             val confirmText = confirm.text.toString()
@@ -669,7 +656,7 @@ class MainActivity : Activity() {
                 }
                 else -> {
                     val saved = createAccount(
-                        name, parsedAge!!, bioText, emailText, pass
+                        name, parsedAge!!, "", emailText, pass
                     )
                     if (saved) {
                         Toast.makeText(
