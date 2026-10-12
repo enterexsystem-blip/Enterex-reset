@@ -703,6 +703,15 @@ class MainActivity : Activity() {
         ).apply { gravity = Gravity.START })
         add(root, status, bottom = 22)
 
+        val plansCard = card()
+        add(plansCard, label("PLANOS DE ACESSO", 12f, silver, true), bottom = 8)
+        add(plansCard, label("7 dias — R$ 15,00  •  15 dias — R$ 30,00  •  1 mês — R$ 50,00", 13f, Color.WHITE, true), bottom = 8)
+        add(plansCard, label("Pagamento online ainda não integrado. Nenhuma cobrança ou ativação será feita aqui.", 11f, muted), bottom = 10)
+        val plansButton = makeButton("VER PLANOS", false)
+        add(plansCard, plansButton)
+        plansButton.setOnClickListener { showPlans() }
+        add(root, plansCard, bottom = 20)
+
         add(root, label("ACESSO RÁPIDO", 12f, muted, true), bottom = 12)
 
         val quickGrid = LinearLayout(this).apply {
@@ -793,6 +802,39 @@ class MainActivity : Activity() {
         setContentView(scroll)
     }
 
+
+    private fun showPlans() {
+        val (scroll, root) = createRoot()
+        addHeader(root)
+        add(root, label("PLANOS ENTEREX", 22f, silver, true), bottom = 8)
+        add(root, label("Escolha o período desejado.", 12f, muted), bottom = 18)
+        listOf(
+            Triple("7 DIAS", "R$ 15,00", "Acesso por 7 dias após confirmação"),
+            Triple("15 DIAS", "R$ 30,00", "Acesso por 15 dias após confirmação"),
+            Triple("1 MÊS", "R$ 50,00", "Acesso por 1 mês após confirmação")
+        ).forEach { plan ->
+            val item = card()
+            add(item, label(plan.first, 12f, muted, true), bottom = 5)
+            add(item, label(plan.second, 24f, Color.WHITE, true), bottom = 5)
+            add(item, label(plan.third, 11f, muted), bottom = 10)
+            val buy = makeButton("INDISPONÍVEL NO MOMENTO", false)
+            add(item, buy)
+            buy.setOnClickListener {
+                AlertDialog.Builder(this)
+                    .setTitle("Compra indisponível")
+                    .setMessage("O pagamento online ainda não foi integrado. Nenhuma cobrança foi realizada e nenhum plano foi ativado. Entre em contato com o suporte.")
+                    .setPositiveButton("ENTENDI", null)
+                    .show()
+            }
+            add(root, item, bottom = 12)
+        }
+        add(root, label("A ativação depende da integração segura de pagamentos e servidor.", 11f, muted), bottom = 18)
+        val back = makeButton("VOLTAR AO PAINEL", true)
+        add(root, back)
+        back.setOnClickListener { showDashboard() }
+        setContentView(scroll)
+    }
+
     private fun showDevices() {
         val (scroll, root) = createRoot()
         addHeader(root)
@@ -824,9 +866,7 @@ class MainActivity : Activity() {
         val diagnostic = card()
         add(diagnostic, label("DIAGNÓSTICO DO APARELHO", 13f, silver, true), bottom = 10)
         add(diagnostic, label(
-            "As ferramentas serão habilitadas quando um dispositivo compatível " +
-                "for detectado. A restauração deve ser executada somente em aparelhos " +
-                "seus ou com autorização do proprietário.",
+            "Área de consulta. A restauração ficará restrita ao ADM autorizado e só será habilitada quando houver integração técnica e validação segura.",
             12f, muted
         ))
         add(root, diagnostic, bottom = 18)
