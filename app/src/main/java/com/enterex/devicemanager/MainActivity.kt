@@ -223,25 +223,69 @@ class MainActivity : Activity() {
     }
 
     private fun showAuthorizationNotice(accountKey: String) {
-        val message = "Para acessar o painel do Enterex, leia e aceite este aviso.\\n\\n" +
-            "• O aplicativo salvará neste celular a sua aceitação, para não perguntar novamente em cada acesso.\\n\\n" +
-            "• A aceitação permite abrir o painel e usar os recursos que forem implementados e autorizados.\\n\\n" +
-            "• Ela NÃO concede automaticamente permissões do Android, acesso à conta Google, depuração USB ou autorização para apagar outros aparelhos. Esses acessos dependerão das permissões oficiais e da compatibilidade do dispositivo.\\n\\n" +
-            "• A restauração pode apagar dados permanentemente e só deve ser usada em aparelhos próprios ou com autorização do proprietário."
-        AlertDialog.Builder(this)
-            .setTitle("Autorizações e uso do Enterex")
+        val message = """
+            TERMO DE CIÊNCIA, AUTORIZAÇÃO E RESPONSABILIDADE — ENTEREX
+
+            1. DISPOSIÇÕES GERAIS. O acesso ao painel do aplicativo Enterex está condicionado à leitura e à manifestação expressa de concordância com este termo.
+
+            2. REGISTRO DA ESCOLHA. A opção selecionada será armazenada localmente neste dispositivo, associada à conta utilizada, para evitar a exibição repetida deste aviso enquanto o respectivo registro permanecer disponível no aplicativo.
+
+            3. LIMITES DA AUTORIZAÇÃO. A concordância limita-se ao registro de ciência deste termo e à liberação de acesso ao painel. Não constitui, por si só, concessão de permissões do sistema Android, autorização de depuração USB, acesso à conta Google, vínculo com serviços de terceiros ou autorização técnica para controlar, restaurar ou apagar qualquer dispositivo.
+
+            4. PERMISSÕES E COMPATIBILIDADE. Cada recurso dependerá de implementação efetiva, compatibilidade técnica, permissões específicas exigidas pelo sistema operacional e, quando aplicável, dos procedimentos oficiais do fabricante ou prestador do serviço. Este termo não substitui essas etapas.
+
+            5. RISCO DE PERDA DE DADOS. Procedimentos de restauração ou apagamento, quando futuramente disponíveis e devidamente autorizados, poderão eliminar dados de forma permanente. Tais procedimentos deverão ser realizados exclusivamente em dispositivos de propriedade do usuário ou mediante autorização legítima do respectivo proprietário.
+
+            6. MANIFESTAÇÃO DE VONTADE. A seleção de “Aceitar” indica ciência e concordância com as condições acima. A seleção de “Recusar” impede o acesso ao painel neste momento. A escolha poderá ser alterada apenas mediante os meios disponibilizados pelo aplicativo.
+
+            Ao prosseguir, confirme uma das opções abaixo.
+        """.trimIndent()
+
+        val options = arrayOf(
+            "ACEITO os termos acima e desejo continuar para o painel.",
+            "RECUSO os termos e desejo retornar à tela de acesso."
+        )
+        var selectedOption = -1
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("TERMO DE CIÊNCIA E AUTORIZAÇÃO")
             .setMessage(message)
+            .setSingleChoiceItems(options, -1) { _, which ->
+                selectedOption = which
+            }
+            .setPositiveButton("CONFIRMAR ESCOLHA", null)
             .setCancelable(false)
-            .setPositiveButton("ACEITAR E CONTINUAR") { _, _ ->
-                authorizations.edit().putBoolean("consent_$accountKey", true).apply()
-                showDashboard()
+            .create()
+
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                when (selectedOption) {
+                    0 -> {
+                        authorizations.edit()
+                            .putBoolean("consent_$accountKey", true)
+                            .apply()
+                        dialog.dismiss()
+                        showDashboard()
+                    }
+                    1 -> {
+                        currentAccount = JSONObject()
+                        dialog.dismiss()
+                        Toast.makeText(
+                            this,
+                            "A opção foi recusada. O painel permanecerá bloqueado.",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        showLogin()
+                    }
+                    else -> Toast.makeText(
+                        this,
+                        "Marque uma das opções antes de confirmar.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
-            .setNegativeButton("RECUSAR") { _, _ ->
-                currentAccount = JSONObject()
-                Toast.makeText(this, "É necessário aceitar o aviso para abrir o painel.", Toast.LENGTH_LONG).show()
-                showLogin()
-            }
-            .show()
+        }
+        dialog.show()
     }
 
     private fun normalizedEmail(email: String) =
