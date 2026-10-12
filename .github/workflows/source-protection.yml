@@ -1,0 +1,60 @@
+name: Source Backup and Integrity
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: "23 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  verify-and-backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full source history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Build debug APK
+        run: gradle assembleDebug
+
+      - name: Create source archive and checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p recovery
+          git archive --format=tar.gz --output=recovery/enterex-source-${GITHUB_SHA}.tar.gz HEAD
+          cd recovery
+          sha256sum "enterex-source-${GITHUB_SHA}.tar.gz" > SHA256SUMS.txt
+          printf 'Commit: %s\nBranch: %s\nWorkflow run: %s\n' "$GITHUB_SHA" "$GITHUB_REF_NAME" "$GITHUB_RUN_ID" > RECOVERY-INFO.txt
+
+      - name: Save source backup
+        uses: actions/upload-artifact@v4
+        with:
+          name: Enterex-source-backup-${{ github.sha }}
+          path: recovery/
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Save build APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Enterex-Reset-APK-${{ github.sha }}
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
