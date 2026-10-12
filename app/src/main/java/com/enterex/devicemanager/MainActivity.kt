@@ -226,62 +226,116 @@ class MainActivity : Activity() {
 
     private fun showAuthorizationNotice(accountKey: String) {
         val message = """
-            TERMO DE CIÊNCIA, AUTORIZAÇÃO E RESPONSABILIDADE — ENTEREX
+            1. DISPOSIÇÕES GERAIS. O acesso ao painel Enterex depende da leitura deste termo e da escolha expressa do usuário.
 
-            1. DISPOSIÇÕES GERAIS. O acesso ao painel do aplicativo Enterex está condicionado à leitura e à manifestação expressa de concordância com este termo.
+            2. REGISTRO DA ESCOLHA. A opção será armazenada localmente neste dispositivo, associada à conta utilizada, enquanto o registro permanecer disponível no aplicativo.
 
-            2. REGISTRO DA ESCOLHA. A opção selecionada será armazenada localmente neste dispositivo, associada à conta utilizada, para evitar a exibição repetida deste aviso enquanto o respectivo registro permanecer disponível no aplicativo.
+            3. LIMITES. Aceitar este termo libera somente o acesso ao painel e registra a ciência destas condições. Não concede permissões do Android, acesso à conta Google, depuração USB, controle remoto nem autorização técnica para restaurar ou apagar dispositivos.
 
-            3. LIMITES DA AUTORIZAÇÃO. A concordância limita-se ao registro de ciência deste termo e à liberação de acesso ao painel. Não constitui, por si só, concessão de permissões do sistema Android, autorização de depuração USB, acesso à conta Google, vínculo com serviços de terceiros ou autorização técnica para controlar, restaurar ou apagar qualquer dispositivo.
+            4. PERMISSÕES E COMPATIBILIDADE. Cada recurso depende de implementação real, compatibilidade, permissões próprias do sistema e, quando aplicável, dos procedimentos oficiais do fabricante. Este termo não substitui essas etapas.
 
-            4. PERMISSÕES E COMPATIBILIDADE. Cada recurso dependerá de implementação efetiva, compatibilidade técnica, permissões específicas exigidas pelo sistema operacional e, quando aplicável, dos procedimentos oficiais do fabricante ou prestador do serviço. Este termo não substitui essas etapas.
+            5. RISCO DE PERDA DE DADOS. Restaurações ou apagamentos, quando disponíveis e devidamente autorizados, podem eliminar dados permanentemente. Só devem ser realizados em dispositivos próprios ou com autorização legítima do proprietário.
 
-            5. RISCO DE PERDA DE DADOS. Procedimentos de restauração ou apagamento, quando futuramente disponíveis e devidamente autorizados, poderão eliminar dados de forma permanente. Tais procedimentos deverão ser realizados exclusivamente em dispositivos de propriedade do usuário ou mediante autorização legítima do respectivo proprietário.
+            6. ESCOLHA. “ACEITAR” registra ciência e libera o painel. “RECUSAR” mantém o painel bloqueado e retorna à tela de acesso.
 
-            6. MANIFESTAÇÃO DE VONTADE. A seleção de “Aceitar” indica ciência e concordância com as condições acima. A seleção de “Recusar” impede o acesso ao painel neste momento. A escolha poderá ser alterada apenas mediante os meios disponibilizados pelo aplicativo.
-
-            Ao prosseguir, confirme uma das opções abaixo.
+            Leia o texto e marque uma das opções abaixo. Nenhuma permissão do sistema será concedida por esta tela.
         """.trimIndent()
 
-        val options = arrayOf(
-            "ACEITO os termos acima e desejo continuar para o painel.",
-            "RECUSO os termos e desejo retornar à tela de acesso."
-        )
-        var selectedOption = -1
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(24, 12, 24, 8)
+            setBackgroundColor(Color.BLACK)
+        }
+        val title = TextView(this).apply {
+            text = "TERMO DE CIÊNCIA E AUTORIZAÇÃO"
+            setTextColor(Color.WHITE)
+            textSize = 18f
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            setPadding(0, 8, 0, 16)
+        }
+        val scroll = ScrollView(this)
+        val body = TextView(this).apply {
+            text = message
+            setTextColor(Color.LTGRAY)
+            textSize = 14f
+            setLineSpacing(3f, 1f)
+            setPadding(2, 0, 8, 12)
+        }
+        scroll.addView(body, ScrollView.LayoutParams(
+            ScrollView.LayoutParams.MATCH_PARENT,
+            ScrollView.LayoutParams.WRAP_CONTENT
+        ))
+        val optionsLabel = TextView(this).apply {
+            text = "SUA ESCOLHA"
+            setTextColor(Color.WHITE)
+            textSize = 13f
+            typeface = Typeface.DEFAULT_BOLD
+            setPadding(0, 12, 0, 4)
+        }
+        val choices = android.widget.RadioGroup(this).apply {
+            orientation = android.widget.RadioGroup.VERTICAL
+        }
+        val acceptId = View.generateViewId()
+        val refuseId = View.generateViewId()
+        val accept = android.widget.RadioButton(this).apply {
+            id = acceptId
+            text = "ACEITAR — concordo com as condições"
+            setTextColor(Color.WHITE)
+            textSize = 14f
+        }
+        val refuse = android.widget.RadioButton(this).apply {
+            id = refuseId
+            text = "RECUSAR — voltar à tela de acesso"
+            setTextColor(Color.WHITE)
+            textSize = 14f
+        }
+        choices.addView(accept)
+        choices.addView(refuse)
+        root.addView(title)
+        root.addView(scroll, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f
+        ).apply { height = 0 })
+        root.addView(optionsLabel)
+        root.addView(choices)
 
         val dialog = AlertDialog.Builder(this)
-            .setTitle("TERMO DE CIÊNCIA E AUTORIZAÇÃO")
-            .setMessage(message)
-            .setSingleChoiceItems(options, -1) { _, which ->
-                selectedOption = which
-            }
+            .setView(root)
             .setPositiveButton("CONFIRMAR ESCOLHA", null)
+            .setNegativeButton("VOLTAR", null)
             .setCancelable(false)
             .create()
 
         dialog.setOnShowListener {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                when (selectedOption) {
-                    0 -> {
+            dialog.window?.setBackgroundDrawableResource(android.R.color.black)
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(Color.WHITE)
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(Color.LTGRAY)
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setOnClickListener {
+                dialog.dismiss()
+                showLogin()
+            }
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setOnClickListener {
+                when (choices.checkedRadioButtonId) {
+                    acceptId -> {
                         authorizations.edit()
                             .putBoolean("consent_$accountKey", true)
                             .apply()
                         dialog.dismiss()
                         showCreatorIntro()
                     }
-                    1 -> {
+                    refuseId -> {
                         currentAccount = JSONObject()
                         dialog.dismiss()
                         Toast.makeText(
                             this,
-                            "A opção foi recusada. O painel permanecerá bloqueado.",
+                            "Termo recusado. O painel permanecerá bloqueado.",
                             Toast.LENGTH_LONG
                         ).show()
                         showLogin()
                     }
                     else -> Toast.makeText(
                         this,
-                        "Marque uma das opções antes de confirmar.",
+                        "Marque ACEITAR ou RECUSAR antes de confirmar.",
                         Toast.LENGTH_SHORT
                     ).show()
                 }
