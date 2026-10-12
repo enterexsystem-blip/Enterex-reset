@@ -34,12 +34,13 @@ import javax.crypto.spec.PBEKeySpec
 
 class MainActivity : Activity() {
 
-    private val black = Color.rgb(5, 6, 8)
-    private val panel = Color.rgb(5, 6, 8)
-    private val silver = Color.rgb(225, 229, 235)
-    private val muted = Color.rgb(135, 143, 153)
-    private val line = Color.rgb(235, 238, 242)
-    private val accent = Color.rgb(180, 190, 205)
+    private var darkMode = true
+    private val black: Int get() = if (darkMode) Color.rgb(5, 6, 8) else Color.rgb(246, 247, 249)
+    private val panel: Int get() = if (darkMode) Color.rgb(5, 6, 8) else Color.WHITE
+    private val silver: Int get() = if (darkMode) Color.rgb(225, 229, 235) else Color.rgb(25, 29, 35)
+    private val muted: Int get() = if (darkMode) Color.rgb(135, 143, 153) else Color.rgb(95, 103, 113)
+    private val line: Int get() = if (darkMode) Color.rgb(65, 73, 84) else Color.rgb(205, 211, 219)
+    private val accent: Int get() = if (darkMode) Color.rgb(180, 190, 205) else Color.rgb(80, 91, 108)
 
     private val accounts by lazy {
         getSharedPreferences("enterex_accounts", MODE_PRIVATE)
@@ -433,9 +434,53 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        darkMode = getSharedPreferences("enterex_settings", MODE_PRIVATE)
+            .getBoolean("dark_mode", true)
         window.statusBarColor = black
         window.navigationBarColor = black
-        showLogin()
+        showSplash()
+    }
+
+    private fun showSplash() {
+        val (scroll, root) = createRoot()
+        root.gravity = Gravity.CENTER
+        val title = label("ENTEREX", 34f, silver, true).apply {
+            typeface = Typeface.create("sans-serif-black", Typeface.BOLD)
+            letterSpacing = 0.16f
+            alpha = 0f
+        }
+        add(root, title, bottom = 8)
+        add(root, label("DEVICE MANAGEMENT", 10f, muted, true))
+        setContentView(scroll)
+        title.animate().alpha(1f).setDuration(450L).start()
+        Handler(Looper.getMainLooper()).postDelayed({
+            if (!isFinishing && !isDestroyed) {
+                title.animate().alpha(0f).setDuration(450L).withEndAction {
+                    if (!isFinishing && !isDestroyed) showLogin()
+                }.start()
+            }
+        }, 1800L)
+    }
+
+    private fun showOperationProgress(message: String): AlertDialog {
+        val progress = android.widget.ProgressBar(this).apply {
+            isIndeterminate = true
+        }
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(24), dp(20), dp(24), dp(20))
+            addView(progress, LinearLayout.LayoutParams(dp(32), dp(32)))
+            addView(label(message, 14f, silver).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(16), 0, 0, 0)
+            }, LinearLayout.LayoutParams(0, dp(48), 1f))
+        }
+        return AlertDialog.Builder(this)
+            .setView(container)
+            .setCancelable(false)
+            .create()
+            .also { it.show() }
     }
 
     private fun showLogin() {
@@ -510,15 +555,26 @@ class MainActivity : Activity() {
                     password.requestFocus()
                 }
                 else -> {
-                    val account = checkLogin(emailValue, passwordValue)
-                    if (account == null) {
-                        Toast.makeText(
-                            this, "E-mail ou senha incorretos.",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    } else {
-                        continueAfterLogin(account)
-                    }
+                    enter.isEnabled = false
+                    create.isEnabled = false
+                    val progress = showOperationProgress("Verificando acesso…")
+                    Thread {
+                        val account = checkLogin(emailValue, passwordValue)
+                        runOnUiThread {
+                            progress.dismiss()
+                            enter.isEnabled = true
+                            create.isEnabled = true
+                            if (isFinishing || isDestroyed) return@runOnUiThread
+                            if (account == null) {
+                                Toast.makeText(
+                                    this, "E-mail ou senha incorretos.",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            } else {
+                                continueAfterLogin(account)
+                            }
+                        }
+                    }.start()
                 }
             }
         }
@@ -655,20 +711,31 @@ class MainActivity : Activity() {
                     confirm.requestFocus()
                 }
                 else -> {
-                    val saved = createAccount(
-                        name, parsedAge!!, "", emailText, pass
-                    )
-                    if (saved) {
-                        Toast.makeText(
-                            this,
-                            "Conta criada! Faça login para continuar.",
-                            Toast.LENGTH_LONG
-                        ).show()
-                        showLogin()
-                    } else {
-                        email.error = "Este e-mail já está cadastrado"
-                        email.requestFocus()
-                    }
+                    register.isEnabled = false
+                    back.isEnabled = false
+                    val progress = showOperationProgress("Criando sua conta…")
+                    Thread {
+                        val saved = createAccount(
+                            name, parsedAge!!, "", emailText, pass
+                        )
+                        runOnUiThread {
+                            progress.dismiss()
+                            register.isEnabled = true
+                            back.isEnabled = true
+                            if (isFinishing || isDestroyed) return@runOnUiThread
+                            if (saved) {
+                                Toast.makeText(
+                                    this,
+                                    "Conta criada! Faça login para continuar.",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                showLogin()
+                            } else {
+                                email.error = "Este e-mail já está cadastrado"
+                                email.requestFocus()
+                            }
+                        }
+                    }.start()
                 }
             }
         }
@@ -684,9 +751,6 @@ class MainActivity : Activity() {
         val (scroll, root) = createRoot()
         root.setPadding(dp(18), dp(18), dp(18), dp(14))
 
-        val nickname = currentAccount.optString("nickname", "Usuário")
-            .ifBlank { "Usuário" }
-
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -699,20 +763,37 @@ class MainActivity : Activity() {
         add(brand, label("DEVICE MANAGER", 9f, muted))
         header.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
 
-        val profile = TextView(this).apply {
-            text = "◉"
+        val actions = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val notifications = TextView(this).apply {
+            text = "♧"
             textSize = 25f
-            setTextColor(silver)
-            setPadding(dp(12), dp(8), dp(4), dp(8))
+            gravity = Gravity.CENTER
+            setTextColor(Color.WHITE)
+            background = shape(Color.rgb(24, 27, 33), Color.rgb(115, 125, 140), 12)
+            contentDescription = "Notificações"
+            setOnClickListener { showNotifications() }
+        }
+        actions.addView(notifications, LinearLayout.LayoutParams(dp(44), dp(44)).apply {
+            marginEnd = dp(8)
+        })
+        val profile = TextView(this).apply {
+            text = "♙"
+            textSize = 25f
+            gravity = Gravity.CENTER
+            setTextColor(Color.WHITE)
+            background = shape(Color.rgb(24, 27, 33), Color.rgb(115, 125, 140), 22)
+            contentDescription = "Meu perfil"
             setOnClickListener { showProfile() }
         }
-        header.addView(profile)
-        add(root, header, bottom = 28)
+        actions.addView(profile, LinearLayout.LayoutParams(dp(44), dp(44)))
+        header.addView(actions)
+        add(root, header, bottom = 24)
 
         add(root, label("PAINEL DE CONTROLE", 10f, muted, true),
             bottom = 8)
-        add(root, label("Olá, $nickname 👋", 27f, silver, true),
-            bottom = 5)
         add(root, label("Gerencie seus dispositivos em um só lugar.",
             13f, muted), bottom = 22)
 
@@ -739,15 +820,6 @@ class MainActivity : Activity() {
             12f, muted
         ).apply { gravity = Gravity.START })
         add(root, status, bottom = 22)
-
-        val plansCard = card()
-        add(plansCard, label("PLANOS DE ACESSO", 12f, silver, true), bottom = 8)
-        add(plansCard, label("7 dias — R$ 15,00  •  15 dias — R$ 30,00  •  1 mês — R$ 50,00", 13f, Color.WHITE, true), bottom = 8)
-        add(plansCard, label("Pagamento online ainda não integrado. Nenhuma cobrança ou ativação será feita aqui.", 11f, muted), bottom = 10)
-        val plansButton = makeButton("VER PLANOS", false)
-        add(plansCard, plansButton)
-        plansButton.setOnClickListener { showPlans() }
-        add(root, plansCard, bottom = 20)
 
         add(root, label("ACESSO RÁPIDO", 12f, muted, true), bottom = 12)
 
@@ -787,6 +859,7 @@ class MainActivity : Activity() {
                         "Ferramentas" -> "Diagnóstico"
                         "Meu perfil" -> "Conta e dados"
                         "Configurações" -> "Preferências do app"
+                        "Nuvem Enterex" -> "Arquivos privados"
                         else -> "Ajuda e informações"
                     }, 11f, muted
                 ))
@@ -805,14 +878,15 @@ class MainActivity : Activity() {
         )
         quickRow(
             Triple("◉", "Meu perfil", { showProfile() }),
-            Triple("↪", "Sair da conta", {
-                currentAccount = JSONObject()
-                showLogin()
-            })
+            Triple("♧", "Notificações", { showNotifications() })
         )
         quickRow(
-            Triple("⚙", "Configurações", { showSettings() }),
-            Triple("ⓘ", "Sobre o sistema", { showSettings() })
+            Triple("☁", "Nuvem Enterex", { showCloudStorage() }),
+            Triple("⚙", "Configurações", { showSettings() })
+        )
+        quickRow(
+            Triple("ⓘ", "Sobre o sistema", { showSettings() }),
+            Triple("◌", "Planos", { showPlans() })
         )
         add(root, quickGrid, bottom = 8)
 
@@ -828,48 +902,207 @@ class MainActivity : Activity() {
         ).apply { gravity = Gravity.CENTER })
         add(root, empty, bottom = 22)
 
-        val logout = makeButton("SAIR DA CONTA", false)
-        add(root, logout, bottom = 12)
-        logout.setOnClickListener {
-            currentAccount = JSONObject()
-            showLogin()
-        }
-
         add(root, label("ENTEREX SYSTEMS", 8f, muted), top = 10)
         setContentView(scroll)
     }
 
 
-    private fun showPlans() {
+    private fun showNotifications() {
         val (scroll, root) = createRoot()
         addHeader(root)
-        add(root, label("PLANOS ENTEREX", 22f, silver, true), bottom = 8)
-        add(root, label("Escolha o período desejado.", 12f, muted), bottom = 18)
-        listOf(
-            Triple("7 DIAS", "R$ 15,00", "Acesso por 7 dias após confirmação"),
-            Triple("15 DIAS", "R$ 30,00", "Acesso por 15 dias após confirmação"),
-            Triple("1 MÊS", "R$ 50,00", "Acesso por 1 mês após confirmação")
-        ).forEach { plan ->
-            val item = card()
-            add(item, label(plan.first, 12f, muted, true), bottom = 5)
-            add(item, label(plan.second, 24f, Color.WHITE, true), bottom = 5)
-            add(item, label(plan.third, 11f, muted), bottom = 10)
-            val buy = makeButton("INDISPONÍVEL NO MOMENTO", false)
-            add(item, buy)
-            buy.setOnClickListener {
-                AlertDialog.Builder(this)
-                    .setTitle("Compra indisponível")
-                    .setMessage("O pagamento online ainda não foi integrado. Nenhuma cobrança foi realizada e nenhum plano foi ativado. Entre em contato com o suporte.")
-                    .setPositiveButton("ENTENDI", null)
-                    .show()
-            }
-            add(root, item, bottom = 12)
-        }
-        add(root, label("A ativação depende da integração segura de pagamentos e servidor.", 11f, muted), bottom = 18)
-        val back = makeButton("VOLTAR AO PAINEL", true)
-        add(root, back)
-        back.setOnClickListener { showDashboard() }
+        add(root, label("NOTIFICAÇÕES", 20f, silver, true), bottom = 8)
+        add(root, label("Avisos e atualizações da sua conta aparecerão aqui.", 13f, muted), bottom = 18)
+        val empty = card()
+        add(empty, label("♧", 34f, silver), bottom = 8)
+        add(empty, label("Tudo tranquilo por aqui", 15f, silver, true), bottom = 5)
+        add(empty, label("Você ainda não tem notificações.", 12f, muted))
+        add(root, empty, bottom = 18)
+        addBottomNavigation(root, "Notificações")
         setContentView(scroll)
+    }
+
+    private fun showCloudStorage() {
+        val (scroll, root) = createRoot()
+        addHeader(root)
+        add(root, label("NUVEM ENTEREX", 21f, silver, true), bottom = 6)
+        add(root, label("Seus arquivos organizados em um só lugar.", 13f, muted), bottom = 18)
+
+        fun storageTile(icon: String, title: String, detail: String, action: () -> Unit, locked: Boolean = false) {
+            val tile = card().apply {
+                background = shape(Color.rgb(10, 12, 15), Color.rgb(75, 83, 96), 18)
+                isClickable = true
+                isFocusable = true
+                elevation = dp(2).toFloat()
+            }
+            val iconView = label(icon, 28f, silver, true).apply {
+                background = shape(Color.rgb(25, 29, 35), Color.rgb(90, 100, 115), 14)
+                setPadding(dp(8), dp(6), dp(8), dp(6))
+            }
+            val copy = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dp(14), 0, 0, 0)
+            }
+            add(copy, label(title + if (locked) "  🔒" else "", 15f, silver, true), bottom = 4)
+            add(copy, label(detail, 11f, muted).apply { gravity = Gravity.START })
+            val plus = makeButton("+", true).apply {
+                setOnClickListener { animateCloudTile(tile, iconView, action) }
+            }
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+            }
+            row.addView(iconView, LinearLayout.LayoutParams(dp(52), dp(52)))
+            row.addView(copy, LinearLayout.LayoutParams(0, -2, 1f))
+            row.addView(plus, LinearLayout.LayoutParams(dp(48), dp(44)))
+            add(tile, row)
+            tile.setOnClickListener { animateCloudTile(tile, iconView, action) }
+            add(root, tile, bottom = 12)
+        }
+
+
+        storageTile("▧", "Imagens", "Free: até 500 MB • Pro: ilimitado", { pickCloudFile("image/*", "Imagens") })
+        storageTile("▶", "Vídeos", "Free: até 500 MB • Pro: ilimitado", { pickCloudFile("video/*", "Vídeos") })
+        val premium = currentAccount.optString("plan", "free").equals("premium", true)
+        storageTile("♫", "Músicas", if (premium) "Disponível no Premium" else "Exclusivo Premium", {
+            if (premium) pickCloudFile("audio/*", "Músicas") else showPlans()
+        }, locked = !premium)
+        storageTile("▤", "Anotações", "Disponível nos planos Free e Pro", { showNotes() })
+        add(root, label("Aviso: envio e armazenamento em nuvem ainda dependem do serviço online e não estão ativos nesta versão.", 11f, muted), bottom = 16)
+        addBottomNavigation(root, "Nuvem")
+        setContentView(scroll)
+    }
+
+    private fun animateCloudTile(tile: View, iconView: View, action: () -> Unit) {
+        tile.animate().cancel()
+        iconView.animate().cancel()
+        tile.animate()
+            .scaleX(0.97f).scaleY(0.97f)
+            .translationZ(dp(6).toFloat())
+            .setDuration(90L)
+            .withEndAction {
+                tile.animate()
+                    .scaleX(1f).scaleY(1f)
+                    .translationZ(0f)
+                    .setDuration(160L)
+                    .start()
+                iconView.animate()
+                    .scaleX(1.12f).scaleY(1.12f)
+                    .setDuration(100L)
+                    .withEndAction {
+                        iconView.animate().scaleX(1f).scaleY(1f).setDuration(140L).start()
+                        action.invoke()
+                    }.start()
+            }.start()
+    }
+
+    private fun pickCloudFile(mimeType: String, category: String) {
+        Toast.makeText(this, "O envio de $category será ativado quando a nuvem estiver disponível.", Toast.LENGTH_LONG).show()
+        // Picker remains disabled until secure cloud upload and quota enforcement are implemented.
+    }
+
+    private fun showNotes() {
+        val input = EditText(this).apply {
+            hint = "Escreva uma anotação"
+            setTextColor(silver)
+            setHintTextColor(muted)
+            background = shape(black, Color.WHITE, 10)
+            setPadding(dp(12), dp(12), dp(12), dp(12))
+            minHeight = dp(120)
+        }
+        AlertDialog.Builder(this).setTitle("Anotações").setView(input)
+            .setPositiveButton("SALVAR") { _, _ ->
+                val notes = getSharedPreferences("enterex_notes", MODE_PRIVATE)
+                notes.edit().putString("note_" + System.currentTimeMillis(), input.text.toString()).apply()
+                Toast.makeText(this, "Anotação salva neste dispositivo.", Toast.LENGTH_SHORT).show()
+            }.setNegativeButton("CANCELAR", null).show()
+    }
+
+    private fun addBottomNavigation(root: LinearLayout, selected: String) {
+        val nav = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            background = shape(Color.rgb(16, 18, 22), Color.rgb(65, 73, 84), 22)
+            setPadding(dp(5), dp(6), dp(5), dp(6))
+            elevation = dp(8).toFloat()
+        }
+        val items = listOf(
+            Triple("⌂", "Início", { showDashboard() }),
+            Triple("☁", "Nuvem", { showCloudStorage() }),
+            Triple("♧", "Avisos", { showNotifications() }),
+            Triple("⚙", "Ajustes", { showSettings() })
+        )
+        items.forEach { item ->
+            val active = item.second == selected
+            val slot = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+                background = if (active) shape(Color.rgb(43, 48, 57), Color.rgb(125, 137, 154), 16)
+                    else shape(Color.TRANSPARENT, Color.TRANSPARENT, 16)
+                setPadding(dp(3), dp(5), dp(3), dp(4))
+                isClickable = true
+                isFocusable = true
+                contentDescription = item.second
+                setOnClickListener {
+                    animate().cancel()
+                    animate().scaleX(0.96f).scaleY(0.96f).setDuration(70).withEndAction {
+                        animate().scaleX(1f).scaleY(1f).setDuration(140).start()
+                        item.third.invoke()
+                    }.start()
+                }
+            }
+            val icon = TextView(this).apply {
+                text = item.first
+                textSize = if (active) 25f else 22f
+                gravity = Gravity.CENTER
+                setTextColor(if (active) Color.WHITE else Color.rgb(132, 141, 154))
+                scaleX = if (active) 1.08f else 1f
+                scaleY = if (active) 1.08f else 1f
+            }
+            val caption = TextView(this).apply {
+                text = item.second
+                textSize = if (active) 10f else 9f
+                gravity = Gravity.CENTER
+                setTextColor(if (active) Color.WHITE else Color.rgb(132, 141, 154))
+                typeface = if (active) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
+                setPadding(0, dp(1), 0, 0)
+            }
+            slot.addView(icon, LinearLayout.LayoutParams(-1, dp(28)))
+            slot.addView(caption, LinearLayout.LayoutParams(-1, dp(17)))
+            nav.addView(slot, LinearLayout.LayoutParams(0, dp(54), 1f).apply {
+                marginStart = dp(2)
+                marginEnd = dp(2)
+            })
+            if (active) {
+                slot.alpha = 0.65f
+                slot.animate().alpha(1f).scaleX(1.04f).scaleY(1.04f)
+                    .setDuration(240).start()
+            }
+        }
+        add(root, nav, top = 16, bottom = 8)
+    }
+
+    private fun showPlans() {
+        val offers = listOf(
+            Triple("ENTEREX ESSENCIAL", "R$ 15,00 • 7 dias", "Acesso temporário às ferramentas compatíveis e orientações para recuperação."),
+            Triple("ENTEREX PLUS", "R$ 30,00 • 15 dias", "Mais tempo para diagnóstico e acompanhamento organizado dos procedimentos."),
+            Triple("ENTEREX PREMIUM", "R$ 50,00 • 1 mês", "Plano pensado para quem busca atendimento prioritário e suporte ampliado.")
+        )
+        val offer = offers[java.security.SecureRandom().nextInt(offers.size)]
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(18), dp(20), dp(16))
+            background = shape(Color.rgb(5, 6, 8), Color.rgb(120, 130, 145), 16)
+        }
+        add(panel, label("ENTEREX  /  PLANOS", 10f, muted, true), bottom = 12)
+        add(panel, label(offer.first, 21f, silver, true), bottom = 8)
+        add(panel, label(offer.second, 25f, Color.WHITE, true), bottom = 14)
+        add(panel, label(offer.third, 13f, silver), bottom = 14)
+        add(panel, label("Armazenamento privado de fotos, contatos, vídeos e músicas, recuperação de arquivos e suporte 24 horas são recursos planejados para planos pagos, mas ainda não estão implementados.", 12f, muted), bottom = 12)
+        add(panel, label("A compra e a ativação online ainda não estão disponíveis. Nenhuma cobrança será feita por esta tela.", 12f, muted), bottom = 14)
+        val dialog = AlertDialog.Builder(this).setView(panel).setNegativeButton("FECHAR", null).create()
+        dialog.show()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.window?.setLayout((resources.displayMetrics.widthPixels * 0.92f).toInt(), android.view.WindowManager.LayoutParams.WRAP_CONTENT)
     }
 
     private fun showDevices() {
@@ -901,12 +1134,53 @@ class MainActivity : Activity() {
         add(root, label("Diagnóstico e manutenção", 12f, muted), bottom = 20)
 
         val diagnostic = card()
-        add(diagnostic, label("DIAGNÓSTICO DO APARELHO", 13f, silver, true), bottom = 10)
+        add(diagnostic, label("TRIAGEM DE INCIDENTES", 13f, silver, true), bottom = 10)
         add(diagnostic, label(
-            "Área de consulta. A restauração ficará restrita ao ADM autorizado e só será habilitada quando houver integração técnica e validação segura.",
+            "Informe um código de incidente conhecido. A triagem é local e demonstrativa; ela não detecta falhas reais nem altera o aparelho.",
+            12f, muted
+        ), bottom = 12)
+
+        val incidentCode = inputField("Código (ex.: APP_CRASH_LOOP)", InputType.TYPE_CLASS_TEXT)
+        add(diagnostic, incidentCode, bottom = 10)
+
+        val result = label(
+            "Aguardando análise. Códigos desconhecidos ficam para revisão do ADM.",
+            12f, muted
+        )
+        result.gravity = Gravity.START
+        add(diagnostic, result, bottom = 12)
+
+        val analyze = makeButton("ANALISAR INCIDENTE", true)
+        add(diagnostic, analyze)
+        analyze.setOnClickListener {
+            val code = incidentCode.text.toString().trim()
+            if (code.isBlank()) {
+                incidentCode.error = "Informe um código"
+                incidentCode.requestFocus()
+            } else {
+                val severity = PolicyIncidentSeverityPolicy.classify(code)
+                val decision = PolicyIncidentSeverityPolicy.decisionForCode(code)
+                val severityText = severity?.name ?: "UNKNOWN"
+                val decisionText = when (decision) {
+                    MaintenanceDecision.AUTOMATIC_SAFE_MAINTENANCE ->
+                        "MANUTENÇÃO SEGURA AUTOMÁTICA (somente estado preventivo do app)"
+                    MaintenanceDecision.ADMIN_REVIEW_REQUIRED ->
+                        "AGUARDAR DECISÃO DO ADM"
+                    MaintenanceDecision.NO_ACTION ->
+                        "NENHUMA AÇÃO"
+                }
+                result.text = "Código: ${code.uppercase(java.util.Locale.ROOT)}\nGravidade: $severityText\nDecisão: $decisionText\n\nNenhuma restauração ou apagamento será executado."
+            }
+        }
+        add(root, diagnostic, bottom = 18)
+
+        val note = card()
+        add(note, label("LIMITES DE SEGURANÇA", 12f, silver, true), bottom = 8)
+        add(note, label(
+            "Falhas graves conhecidas são sinalizadas para manutenção preventiva segura. Falhas leves, médias ou desconhecidas aguardam o ADM. Esta versão ainda não tem monitoramento real do aparelho nem backend administrativo.",
             12f, muted
         ))
-        add(root, diagnostic, bottom = 18)
+        add(root, note, bottom = 18)
 
         val back = makeButton("VOLTAR AO PAINEL", true)
         add(root, back)
@@ -924,8 +1198,35 @@ class MainActivity : Activity() {
 
         val appearance = card()
         add(appearance, label("APARÊNCIA", 12f, silver, true), bottom = 8)
-        add(appearance, label("Tema escuro", 15f, silver, true), bottom = 4)
-        add(appearance, label("O Enterex mantém a identidade preta e prateada nesta versão.", 12f, muted))
+        val themeRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val themeCopy = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        add(themeCopy, label("Modo escuro", 15f, silver, true).apply { gravity = Gravity.START }, bottom = 4)
+        add(themeCopy, label("Alternar entre tema escuro e claro.", 12f, muted).apply { gravity = Gravity.START })
+        themeRow.addView(themeCopy, LinearLayout.LayoutParams(0, -2, 1f))
+        val themeToggle = CheckBox(this).apply {
+            text = if (darkMode) "ON" else "OFF"
+            isChecked = darkMode
+            textSize = 12f
+            setTextColor(silver)
+            buttonTintList = android.content.res.ColorStateList.valueOf(accent)
+            setOnCheckedChangeListener { _, checked ->
+                darkMode = checked
+                text = if (checked) "ON" else "OFF"
+                getSharedPreferences("enterex_settings", MODE_PRIVATE).edit()
+                    .putBoolean("dark_mode", checked).apply()
+                window.statusBarColor = black
+                window.navigationBarColor = black
+                showSettings()
+            }
+        }
+        themeRow.addView(themeToggle)
+        add(appearance, themeRow, bottom = 4)
+        add(appearance, label("A preferência fica salva neste dispositivo.", 12f, muted))
         add(root, appearance, bottom = 14)
 
         val privacy = card()
@@ -962,15 +1263,52 @@ class MainActivity : Activity() {
         val (scroll, root) = createRoot()
         addHeader(root)
         add(root, label("MEU PERFIL", 22f, silver, true), bottom = 18)
-
         val profile = card()
-        add(profile, label("◉", 42f, silver), bottom = 10)
+        val avatar = ImageView(this).apply {
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            background = shape(Color.rgb(24, 27, 33), line, 48)
+            clipToOutline = true
+            contentDescription = "Foto de perfil"
+        }
+        val photoUri = currentAccount.optString("photoUri", "")
+        if (photoUri.isNotBlank()) {
+            try { avatar.setImageURI(Uri.parse(photoUri)) } catch (_: Exception) {}
+        } else {
+            avatar.setImageDrawable(android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.OVAL
+                setColor(Color.rgb(24, 27, 33))
+                setStroke(dp(1), line)
+            })
+        }
+        profileImage = avatar
+        profile.addView(avatar, LinearLayout.LayoutParams(dp(96), dp(96)).apply { gravity = Gravity.CENTER; bottomMargin = dp(12) })
+        val changePhoto = makeButton("ALTERAR FOTO", false)
+        add(profile, changePhoto, bottom = 16)
+        changePhoto.setOnClickListener {
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                type = "image/*"
+                addCategory(Intent.CATEGORY_OPENABLE)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+            }
+            startActivityForResult(intent, 1001)
+        }
         add(profile, label(currentAccount.optString("nickname", "Usuário"), 20f, silver, true), bottom = 8)
         add(profile, label("Idade: " + currentAccount.optInt("age", 0), 12f, muted), bottom = 8)
         val bio = currentAccount.optString("bio", "").ifBlank { "Nenhuma biografia informada." }
         add(profile, label(bio, 12f, muted))
         add(root, profile, bottom = 18)
-
+        val planCard = card()
+        add(planCard, label("STATUS DO PLANO", 12f, silver, true), bottom = 8)
+        add(planCard, label(currentAccount.optString("plan", "Plano gratuito"), 16f, silver, true), bottom = 5)
+        add(planCard, label("O plano e seus recursos aparecerão aqui quando a ativação estiver integrada.", 11f, muted))
+        add(root, planCard, bottom = 16)
+        val privacy = card()
+        add(privacy, label("CONTA E PRIVACIDADE", 12f, silver, true), bottom = 8)
+        add(privacy, label("Nesta versão, conta e foto ficam salvas localmente neste dispositivo. Sincronização e armazenamento privado na nuvem ainda não estão disponíveis.", 11f, muted), bottom = 12)
+        val logout = makeButton("SAIR DA CONTA", false)
+        add(privacy, logout)
+        logout.setOnClickListener { currentAccount = JSONObject(); showLogin() }
+        add(root, privacy, bottom = 18)
         val back = makeButton("VOLTAR AO PAINEL", true)
         add(root, back)
         back.setOnClickListener { showDashboard() }
