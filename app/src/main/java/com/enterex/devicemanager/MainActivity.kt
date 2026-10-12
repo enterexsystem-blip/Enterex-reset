@@ -1107,23 +1107,31 @@ class MainActivity : Activity() {
     }
 
     private fun showPlans() {
-        val offers = listOf(
-            Triple("ENTEREX ESSENCIAL", "R$ 15,00 • 7 dias", "Acesso temporário às ferramentas compatíveis e orientações para recuperação."),
-            Triple("ENTEREX PLUS", "R$ 30,00 • 15 dias", "Mais tempo para diagnóstico e acompanhamento organizado dos procedimentos."),
-            Triple("ENTEREX PREMIUM", "R$ 50,00 • 1 mês", "Plano pensado para quem busca atendimento prioritário e suporte ampliado.")
-        )
-        val offer = offers[java.security.SecureRandom().nextInt(offers.size)]
         val panel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(20), dp(18), dp(20), dp(16))
-            background = shape(Color.rgb(5, 6, 8), Color.rgb(120, 130, 145), 16)
+            background = shape(panel, line, 16)
         }
         add(panel, label("ENTEREX  /  PLANOS", 10f, muted, true), bottom = 12)
-        add(panel, label(offer.first, 21f, silver, true), bottom = 8)
-        add(panel, label(offer.second, 25f, Color.WHITE, true), bottom = 14)
-        add(panel, label(offer.third, 13f, silver), bottom = 14)
-        add(panel, label("Armazenamento privado de fotos, contatos, vídeos e músicas, recuperação de arquivos e suporte 24 horas são recursos planejados para planos pagos, mas ainda não estão implementados.", 12f, muted), bottom = 12)
-        add(panel, label("A compra e a ativação online ainda não estão disponíveis. Nenhuma cobrança será feita por esta tela.", 12f, muted), bottom = 14)
+        add(panel, label("Escolha o plano ideal", 21f, silver, true), bottom = 14)
+        val offers = listOf(
+            Triple("ESSENCIAL", "R$ 15,00 • 7 dias", "Ferramentas compatíveis e orientações."),
+            Triple("PLUS", "R$ 30,00 • 15 dias", "Mais tempo para diagnóstico e acompanhamento."),
+            Triple("PREMIUM", "R$ 50,00 • 1 mês", "Suporte ampliado planejado.")
+        )
+        offers.forEach { offer ->
+            val offerCard = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dp(14), dp(12), dp(14), dp(12))
+                background = shape(black, line, 12)
+            }
+            add(offerCard, label(offer.first, 12f, muted, true), bottom = 5)
+            add(offerCard, label(offer.second, 20f, silver, true), bottom = 5)
+            add(offerCard, label(offer.third, 12f, muted))
+            add(panel, offerCard, bottom = 10)
+        }
+        add(panel, label("Recursos extras e suporte 24 horas ainda não estão implementados.", 12f, muted), bottom = 8)
+        add(panel, label("Compra e ativação online indisponíveis. Nenhuma cobrança será feita nesta tela.", 12f, muted), bottom = 12)
         val dialog = AlertDialog.Builder(this).setView(panel).setNegativeButton("FECHAR", null).create()
         dialog.show()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
