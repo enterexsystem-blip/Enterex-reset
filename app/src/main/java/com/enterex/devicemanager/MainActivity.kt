@@ -701,7 +701,27 @@ class MainActivity : Activity() {
             "Nenhum aparelho USB foi identificado.",
             12f, muted
         ).apply { gravity = Gravity.START })
-        add(root, status, bottom = 22)
+        add(root, status, bottom = 14)
+
+        val legend = card()
+        add(legend, label("LEGENDA DE STATUS", 11f, silver, true), bottom = 10)
+        add(legend, label("🟢  FUNCIONANDO", 12f, Color.rgb(76, 220, 135), true), bottom = 5)
+        add(legend, label("🟡  PARCIAL / DEPENDE DE PERMISSÃO", 11f, Color.rgb(255, 205, 70), true), bottom = 5)
+        add(legend, label("🔴  NÃO IMPLEMENTADO", 12f, Color.rgb(255, 95, 95), true), bottom = 12)
+        add(legend, label("Os indicadores mostram o estado real de cada módulo nesta versão; amarelo não significa que o recurso já esteja ativo.", 11f, muted).apply { gravity = Gravity.START })
+        add(root, legend, bottom = 18)
+
+        add(root, label("ESTADO DOS MÓDULOS", 12f, muted, true), bottom = 10)
+        val modules = card()
+        add(modules, label("🟢  Conta local e navegação", 13f, Color.rgb(76, 220, 135), true), bottom = 7)
+        add(modules, label("Cadastro, login local e telas do aplicativo.", 11f, muted).apply { gravity = Gravity.START }, bottom = 12)
+        add(modules, label("🟡  Diagnóstico do aparelho", 13f, Color.rgb(255, 205, 70), true), bottom = 7)
+        add(modules, label("Planejado; coleta real de dados do dispositivo ainda precisa ser implementada.", 11f, muted).apply { gravity = Gravity.START }, bottom = 12)
+        add(modules, label("🔴  USB / ADB / reset", 13f, Color.rgb(255, 95, 95), true), bottom = 7)
+        add(modules, label("Detecção USB, operações de recuperação e restauração ainda não estão implementadas.", 11f, muted).apply { gravity = Gravity.START }, bottom = 12)
+        add(modules, label("🔴  Código *777# e alertas ADM", 13f, Color.rgb(255, 95, 95), true), bottom = 7)
+        add(modules, label("Ainda não implementados; detecção na tela de bloqueio exige integração compatível.", 11f, muted).apply { gravity = Gravity.START })
+        add(root, modules, bottom = 22)
 
         add(root, label("ACESSO RÁPIDO", 12f, muted, true), bottom = 12)
 
