@@ -901,12 +901,53 @@ class MainActivity : Activity() {
         add(root, label("Diagnóstico e manutenção", 12f, muted), bottom = 20)
 
         val diagnostic = card()
-        add(diagnostic, label("DIAGNÓSTICO DO APARELHO", 13f, silver, true), bottom = 10)
+        add(diagnostic, label("TRIAGEM DE INCIDENTES", 13f, silver, true), bottom = 10)
         add(diagnostic, label(
-            "Área de consulta. A restauração ficará restrita ao ADM autorizado e só será habilitada quando houver integração técnica e validação segura.",
+            "Informe um código de incidente conhecido. A triagem é local e demonstrativa; ela não detecta falhas reais nem altera o aparelho.",
+            12f, muted
+        ), bottom = 12)
+
+        val incidentCode = inputField("Código (ex.: APP_CRASH_LOOP)", InputType.TYPE_CLASS_TEXT)
+        add(diagnostic, incidentCode, bottom = 10)
+
+        val result = label(
+            "Aguardando análise. Códigos desconhecidos ficam para revisão do ADM.",
+            12f, muted
+        )
+        result.gravity = Gravity.START
+        add(diagnostic, result, bottom = 12)
+
+        val analyze = makeButton("ANALISAR INCIDENTE", true)
+        add(diagnostic, analyze)
+        analyze.setOnClickListener {
+            val code = incidentCode.text.toString().trim()
+            if (code.isBlank()) {
+                incidentCode.error = "Informe um código"
+                incidentCode.requestFocus()
+            } else {
+                val severity = IncidentSeverityPolicy.classify(code)
+                val decision = IncidentSeverityPolicy.decisionForCode(code)
+                val severityText = severity?.name ?: "UNKNOWN"
+                val decisionText = when (decision) {
+                    MaintenanceDecision.AUTOMATIC_SAFE_MAINTENANCE ->
+                        "MANUTENÇÃO SEGURA AUTOMÁTICA (somente estado preventivo do app)"
+                    MaintenanceDecision.ADMIN_REVIEW_REQUIRED ->
+                        "AGUARDAR DECISÃO DO ADM"
+                    MaintenanceDecision.NO_ACTION ->
+                        "NENHUMA AÇÃO"
+                }
+                result.text = "Código: ${code.uppercase(java.util.Locale.ROOT)}\nGravidade: $severityText\nDecisão: $decisionText\n\nNenhuma restauração ou apagamento será executado."
+            }
+        }
+        add(root, diagnostic, bottom = 18)
+
+        val note = card()
+        add(note, label("LIMITES DE SEGURANÇA", 12f, silver, true), bottom = 8)
+        add(note, label(
+            "Falhas graves conhecidas são sinalizadas para manutenção preventiva segura. Falhas leves, médias ou desconhecidas aguardam o ADM. Esta versão ainda não tem monitoramento real do aparelho nem backend administrativo.",
             12f, muted
         ))
-        add(root, diagnostic, bottom = 18)
+        add(root, note, bottom = 18)
 
         val back = makeButton("VOLTAR AO PAINEL", true)
         add(root, back)
