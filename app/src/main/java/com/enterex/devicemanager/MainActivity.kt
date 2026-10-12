@@ -34,12 +34,13 @@ import javax.crypto.spec.PBEKeySpec
 
 class MainActivity : Activity() {
 
-    private val black = Color.rgb(5, 6, 8)
-    private val panel = Color.rgb(5, 6, 8)
-    private val silver = Color.rgb(225, 229, 235)
-    private val muted = Color.rgb(135, 143, 153)
-    private val line = Color.rgb(235, 238, 242)
-    private val accent = Color.rgb(180, 190, 205)
+    private var darkMode = true
+    private val black: Int get() = if (darkMode) Color.rgb(5, 6, 8) else Color.rgb(246, 247, 249)
+    private val panel: Int get() = if (darkMode) Color.rgb(5, 6, 8) else Color.WHITE
+    private val silver: Int get() = if (darkMode) Color.rgb(225, 229, 235) else Color.rgb(25, 29, 35)
+    private val muted: Int get() = if (darkMode) Color.rgb(135, 143, 153) else Color.rgb(95, 103, 113)
+    private val line: Int get() = if (darkMode) Color.rgb(65, 73, 84) else Color.rgb(205, 211, 219)
+    private val accent: Int get() = if (darkMode) Color.rgb(180, 190, 205) else Color.rgb(80, 91, 108)
 
     private val accounts by lazy {
         getSharedPreferences("enterex_accounts", MODE_PRIVATE)
@@ -433,6 +434,8 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        darkMode = getSharedPreferences("enterex_settings", MODE_PRIVATE)
+            .getBoolean("dark_mode", true)
         window.statusBarColor = black
         window.navigationBarColor = black
         showSplash()
@@ -1195,8 +1198,35 @@ class MainActivity : Activity() {
 
         val appearance = card()
         add(appearance, label("APARÊNCIA", 12f, silver, true), bottom = 8)
-        add(appearance, label("Tema escuro", 15f, silver, true), bottom = 4)
-        add(appearance, label("O Enterex mantém a identidade preta e prateada nesta versão.", 12f, muted))
+        val themeRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val themeCopy = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        add(themeCopy, label("Modo escuro", 15f, silver, true).apply { gravity = Gravity.START }, bottom = 4)
+        add(themeCopy, label("Alternar entre tema escuro e claro.", 12f, muted).apply { gravity = Gravity.START })
+        themeRow.addView(themeCopy, LinearLayout.LayoutParams(0, -2, 1f))
+        val themeToggle = CheckBox(this).apply {
+            text = if (darkMode) "ON" else "OFF"
+            isChecked = darkMode
+            textSize = 12f
+            setTextColor(silver)
+            buttonTintList = android.content.res.ColorStateList.valueOf(accent)
+            setOnCheckedChangeListener { _, checked ->
+                darkMode = checked
+                text = if (checked) "ON" else "OFF"
+                getSharedPreferences("enterex_settings", MODE_PRIVATE).edit()
+                    .putBoolean("dark_mode", checked).apply()
+                window.statusBarColor = black
+                window.navigationBarColor = black
+                showSettings()
+            }
+        }
+        themeRow.addView(themeToggle)
+        add(appearance, themeRow, bottom = 4)
+        add(appearance, label("A preferência fica salva neste dispositivo.", 12f, muted))
         add(root, appearance, bottom = 14)
 
         val privacy = card()
