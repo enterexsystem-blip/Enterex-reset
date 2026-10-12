@@ -615,3 +615,102 @@ class MainActivity : Activity() {
         add(empty, label(
             "Os aparelhos identificados aparecerão nesta área.",
   
+            12f, muted
+        ).apply { gravity = Gravity.CENTER })
+        add(root, empty, bottom = 22)
+
+        val logout = makeButton("SAIR DA CONTA", false)
+        add(root, logout, bottom = 12)
+        logout.setOnClickListener {
+            currentAccount = JSONObject()
+            showLogin()
+        }
+
+        add(root, label("ENTEREX SYSTEMS", 8f, muted), top = 10)
+        setContentView(scroll)
+    }
+
+    private fun showDevices() {
+        val (scroll, root) = createRoot()
+        addHeader(root)
+        add(root, label("DISPOSITIVOS", 22f, silver, true), bottom = 8)
+        add(root, label("Conecte um aparelho USB compatível.", 12f, muted), bottom = 20)
+
+        val info = card()
+        add(info, label("NENHUM DISPOSITIVO DETECTADO", 13f, silver, true), bottom = 10)
+        add(info, label(
+            "A versão atual ainda não possui detecção USB/ADB ativa. " +
+                "Conecte o aparelho com um cabo de dados e habilite a depuração USB " +
+                "nas opções de desenvolvedor para a futura integração.",
+            12f, muted
+        ))
+        add(root, info, bottom = 18)
+
+        val back = makeButton("VOLTAR AO PAINEL", true)
+        add(root, back)
+        back.setOnClickListener { showDashboard() }
+        setContentView(scroll)
+    }
+
+    private fun showTools() {
+        val (scroll, root) = createRoot()
+        addHeader(root)
+        add(root, label("FERRAMENTAS", 22f, silver, true), bottom = 8)
+        add(root, label("Diagnóstico e manutenção", 12f, muted), bottom = 20)
+
+        val diagnostic = card()
+        add(diagnostic, label("DIAGNÓSTICO DO APARELHO", 13f, silver, true), bottom = 10)
+        add(diagnostic, label(
+            "As ferramentas serão habilitadas quando um dispositivo compatível " +
+                "for detectado. A restauração deve ser executada somente em aparelhos " +
+                "seus ou com autorização do proprietário.",
+            12f, muted
+        ))
+        add(root, diagnostic, bottom = 18)
+
+        val back = makeButton("VOLTAR AO PAINEL", true)
+        add(root, back)
+        back.setOnClickListener { showDashboard() }
+        setContentView(scroll)
+    }
+
+    private fun showProfile() {
+        val (scroll, root) = createRoot()
+        addHeader(root)
+        add(root, label("MEU PERFIL", 22f, silver, true), bottom = 18)
+
+        val profile = card()
+        add(profile, label("◉", 42f, silver), bottom = 10)
+        add(profile, label(currentAccount.optString("nickname", "Usuário"), 20f, silver, true), bottom = 8)
+        add(profile, label("Idade: " + currentAccount.optInt("age", 0), 12f, muted), bottom = 8)
+        val bio = currentAccount.optString("bio", "").ifBlank { "Nenhuma biografia informada." }
+        add(profile, label(bio, 12f, muted))
+        add(root, profile, bottom = 18)
+
+        val back = makeButton("VOLTAR AO PAINEL", true)
+        add(root, back)
+        back.setOnClickListener { showDashboard() }
+        setContentView(scroll)
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 1001 && resultCode == RESULT_OK) {
+            val uri = data?.data ?: return
+            selectedPhoto = uri
+            try {
+                contentResolver.takePersistableUriPermission(
+                    uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (_: Exception) {
+                // Alguns seletores não oferecem permissão persistente.
+            }
+            try {
+                profileImage?.setImageURI(uri)
+            } catch (_: Exception) {
+                Toast.makeText(this, "Não foi possível carregar essa imagem.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+}
